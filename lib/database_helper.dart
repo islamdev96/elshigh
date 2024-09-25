@@ -1,5 +1,9 @@
+import 'dart:convert';
+import 'dart:io';
 import 'package:sqflite/sqflite.dart';
+// ignore: depend_on_referenced_packages
 import 'package:path/path.dart';
+// لإدارة الملفات
 
 class DatabaseHelper {
   static final DatabaseHelper _instance = DatabaseHelper._internal();
@@ -15,13 +19,6 @@ class DatabaseHelper {
     if (_database != null) return _database!;
     _database = await _initDatabase();
     return _database!;
-  }
-
-  Future<Map<String, dynamic>?> getBeneficiaryById(int id) async {
-    final db = await database;
-    final results =
-        await db.query('beneficiaries', where: 'id = ?', whereArgs: [id]);
-    return results.isNotEmpty ? results.first : null;
   }
 
   Future<Database> _initDatabase() async {
@@ -47,6 +44,28 @@ class DatabaseHelper {
     );
   }
 
+  // دالة استرجاع البيانات من ملف JSON
+  Future<void> restoreFromJson(String filePath) async {
+    final db = await database;
+    final jsonString =
+        await File(filePath).readAsString(); // قراءة محتويات الملف
+    final List<dynamic> jsonData =
+        json.decode(jsonString); // تحويل النص إلى كائن JSON
+
+    // مسح البيانات الحالية
+    await db.delete('beneficiaries');
+
+    // إدخال البيانات من النسخة الاحتياطية
+    for (var beneficiary in jsonData) {
+      await db.insert('beneficiaries', beneficiary);
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getBeneficiaries() async {
+    final db = await database;
+    return await db.query('beneficiaries');
+  }
+
   Future<void> insertBeneficiary(Map<String, dynamic> data) async {
     final db = await database;
     await db.insert('beneficiaries', data);
@@ -57,13 +76,15 @@ class DatabaseHelper {
     await db.update('beneficiaries', data, where: 'id = ?', whereArgs: [id]);
   }
 
-  Future<List<Map<String, dynamic>>> getBeneficiaries() async {
-    final db = await database;
-    return await db.query('beneficiaries');
-  }
-
   Future<void> deleteBeneficiary(int id) async {
     final db = await database;
     await db.delete('beneficiaries', where: 'id = ?', whereArgs: [id]);
+  }
+
+  Future<Map<String, dynamic>?> getBeneficiaryById(int id) async {
+    final db = await database;
+    final results =
+        await db.query('beneficiaries', where: 'id = ?', whereArgs: [id]);
+    return results.isNotEmpty ? results.first : null;
   }
 }

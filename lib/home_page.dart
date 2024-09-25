@@ -1,9 +1,8 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:path_provider/path_provider.dart'; // تحتاجه إذا لم يكن موجود بالفعل
 import 'beneficiary_form.dart';
 import 'database_helper.dart';
-import 'BackupManager.dart'; // تأكد من أن لديك ملف BackupManager وتعريفاته
+import 'beneficiary_tile.dart';
+import 'backup_manager.dart'; // تأكد من استيراد BackupManager
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -14,149 +13,17 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   late DatabaseHelper dbHelper;
-  BackupManager? backupManager; // غيرناه من late إلى nullable
+  late BackupManager backupManager;
 
   @override
   void initState() {
     super.initState();
     dbHelper = DatabaseHelper();
-    backupManager = BackupManager(dbHelper); // تهيئة backupManager هنا
+    backupManager = BackupManager(dbHelper); // تهيئة BackupManager
   }
 
   Future<List<Map<String, dynamic>>> _getBeneficiaries() async {
     return await dbHelper.getBeneficiaries();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('جمعية خيرية'),
-        backgroundColor: Colors.teal,
-      ),
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Colors.teal.shade50, Colors.white],
-          ),
-        ),
-        child: FutureBuilder<List<Map<String, dynamic>>>(
-          future: _getBeneficiaries(),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(
-                  child: CircularProgressIndicator(color: Colors.teal));
-            } else if (snapshot.hasError) {
-              return Center(
-                  child: Text('حدث خطأ: ${snapshot.error}',
-                      style: const TextStyle(color: Colors.red)));
-            } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-              return const Center(
-                  child: Text('لا يوجد بيانات محفوظة',
-                      style: TextStyle(fontSize: 18, color: Colors.teal)));
-            } else {
-              final beneficiaries = snapshot.data!;
-              return ListView.builder(
-                itemCount: beneficiaries.length,
-                itemBuilder: (context, index) {
-                  final beneficiary = beneficiaries[index];
-                  return Column(
-                    children: [
-                      Card(
-                        margin: const EdgeInsets.symmetric(
-                            vertical: 8, horizontal: 16),
-                        elevation: 4,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(15),
-                        ),
-                        child: ListTile(
-                          leading: beneficiary['image1Path'] != null
-                              ? ClipRRect(
-                                  borderRadius: BorderRadius.circular(10),
-                                  child: Image.file(
-                                      File(beneficiary['image1Path']),
-                                      width: 70,
-                                      height: 70,
-                                      fit: BoxFit.cover),
-                                )
-                              : CircleAvatar(
-                                  radius: 35,
-                                  backgroundColor: Colors.teal.shade100,
-                                  child: const Icon(Icons.person,
-                                      size: 40, color: Colors.teal),
-                                ),
-                          title: Text(
-                            beneficiary['name'],
-                            style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.teal.shade700),
-                          ),
-                          subtitle: Text(
-                            '${beneficiary['phone']}\n${beneficiary['address']}',
-                            style: TextStyle(
-                                fontSize: 14, color: Colors.teal.shade600),
-                          ),
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => BeneficiaryForm(
-                                    beneficiary: beneficiary,
-                                    isReadOnly: false),
-                              ),
-                            ).then((_) {
-                              setState(() {});
-                            });
-                          },
-                          trailing: IconButton(
-                            icon: const Icon(Icons.delete, color: Colors.red),
-                            onPressed: () =>
-                                _deleteBeneficiary(beneficiary['id']),
-                          ),
-                          isThreeLine: true,
-                        ),
-                      ),
-                    ],
-                  );
-                },
-              );
-            }
-          },
-        ),
-      ),
-      floatingActionButton: Column(
-        mainAxisAlignment: MainAxisAlignment.end,
-        children: [
-          FloatingActionButton(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (context) => const BeneficiaryForm()),
-              ).then((_) {
-                setState(() {});
-              });
-            },
-            backgroundColor: Colors.teal,
-            tooltip: 'إضافة مستفيد جديد',
-            child: const Icon(Icons.add),
-          ),
-          const SizedBox(height: 10),
-          FloatingActionButton(
-            onPressed: () {
-              backupManager
-                  ?.backupToJson(); // تأكدنا من أن backupManager ليس null
-            },
-            backgroundColor: Colors.teal,
-            tooltip: 'حفظ نسخة احتياطية',
-            child: const Icon(Icons.backup),
-          ),
-        ],
-      ),
-    );
   }
 
   Future<void> _deleteBeneficiary(int id) async {
@@ -180,7 +47,87 @@ class _HomePageState extends State<HomePage> {
 
     if (confirmed == true) {
       await dbHelper.deleteBeneficiary(id);
-      setState(() {}); // لإعادة بناء الواجهة بعد الحذف
+      setState(() {});
     }
+  }
+
+  // دالة لتنفيذ النسخ الاحتياطي
+  Future<void> _backupData() async {
+    await backupManager.backupToJson(); // أو يمكنك استدعاء backupToCsv()
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('جمعية خيرية'),
+        backgroundColor: Colors.teal,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.backup),
+            tooltip: 'نسخ احتياطي',
+            onPressed: () async {
+              await _backupData(); // استدعاء دالة النسخ الاحتياطي
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('تم النسخ الاحتياطي بنجاح!')),
+              );
+            },
+          ),
+        ],
+      ),
+      body: FutureBuilder<List<Map<String, dynamic>>>(
+        future: _getBeneficiaries(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(
+                child: CircularProgressIndicator(color: Colors.teal));
+          } else if (snapshot.hasError) {
+            return Center(
+                child: Text('حدث خطأ: ${snapshot.error}',
+                    style: const TextStyle(color: Colors.red)));
+          } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            return const Center(
+                child: Text('لا يوجد بيانات محفوظة',
+                    style: TextStyle(fontSize: 18, color: Colors.teal)));
+          } else {
+            final beneficiaries = snapshot.data!;
+            return ListView.builder(
+              itemCount: beneficiaries.length,
+              itemBuilder: (context, index) {
+                final beneficiary = beneficiaries[index];
+                return BeneficiaryTile(
+                  beneficiary: beneficiary,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => BeneficiaryForm(
+                            beneficiary: beneficiary, isReadOnly: false),
+                      ),
+                    ).then((_) {
+                      setState(() {});
+                    });
+                  },
+                  onDelete: () => _deleteBeneficiary(beneficiary['id']),
+                );
+              },
+            );
+          }
+        },
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const BeneficiaryForm()),
+          ).then((_) {
+            setState(() {});
+          });
+        },
+        backgroundColor: Colors.teal,
+        tooltip: 'إضافة مستفيد جديد',
+        child: const Icon(Icons.add),
+      ),
+    );
   }
 }

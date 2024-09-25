@@ -1,9 +1,9 @@
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
-import 'package:flutter/material.dart';
 import 'database_helper.dart';
 import 'dart:convert'; // لاستخدام JSON
 
+// إدارة النسخ الاحتياطية
 class BackupManager {
   final DatabaseHelper dbHelper;
 
@@ -52,6 +52,29 @@ class BackupManager {
       }
     } catch (e) {
       print('حدث خطأ أثناء حفظ النسخة الاحتياطية: $e');
+    }
+  }
+
+  // دالة لاسترجاع البيانات من ملف JSON
+  Future<void> restoreFromJson() async {
+    try {
+      String filePath = await _getFilePath('backup.json');
+      File file = File(filePath);
+
+      if (await file.exists()) {
+        String jsonData = await file.readAsString();
+        List<dynamic> beneficiaries = jsonDecode(jsonData);
+
+        for (var beneficiary in beneficiaries) {
+          await dbHelper
+              .insertBeneficiary(Map<String, dynamic>.from(beneficiary));
+        }
+        print('تم استرجاع البيانات بنجاح.');
+      } else {
+        print('ملف النسخة الاحتياطية غير موجود.');
+      }
+    } catch (e) {
+      print('حدث خطأ أثناء استرجاع البيانات: $e');
     }
   }
 
