@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'beneficiary_form.dart';
 import 'database_helper.dart';
 import 'beneficiary_tile.dart';
-import 'backup_manager.dart'; // تأكد من استيراد BackupManager
+import 'backup_manager.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -19,7 +19,7 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     dbHelper = DatabaseHelper();
-    backupManager = BackupManager(dbHelper); // تهيئة BackupManager
+    backupManager = BackupManager(dbHelper);
   }
 
   Future<List<Map<String, dynamic>>> _getBeneficiaries() async {
@@ -51,9 +51,23 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  // دالة لتنفيذ النسخ الاحتياطي
   Future<void> _backupData() async {
-    await backupManager.backupToJson(); // أو يمكنك استدعاء backupToCsv()
+    await backupManager.backupToJson();
+  }
+
+  // دالة جديدة لاستعادة البيانات
+  Future<void> _restoreData() async {
+    try {
+      await backupManager.restoreFromJson();
+      setState(() {}); // تحديث واجهة المستخدم بعد الاستعادة
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('تم استعادة البيانات بنجاح!')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('حدث خطأ أثناء استعادة البيانات: $e')),
+      );
+    }
   }
 
   @override
@@ -67,11 +81,16 @@ class _HomePageState extends State<HomePage> {
             icon: const Icon(Icons.backup),
             tooltip: 'نسخ احتياطي',
             onPressed: () async {
-              await _backupData(); // استدعاء دالة النسخ الاحتياطي
+              await _backupData();
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('تم النسخ الاحتياطي بنجاح!')),
               );
             },
+          ),
+          IconButton(
+            icon: const Icon(Icons.restore),
+            tooltip: 'استعادة البيانات',
+            onPressed: _restoreData,
           ),
         ],
       ),
