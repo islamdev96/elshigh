@@ -1,7 +1,9 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart'; // تحتاجه إذا لم يكن موجود بالفعل
 import 'beneficiary_form.dart';
 import 'database_helper.dart';
-import 'dart:io';
+import 'BackupManager.dart'; // تأكد من أن لديك ملف BackupManager وتعريفاته
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -12,40 +14,17 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   late DatabaseHelper dbHelper;
+  BackupManager? backupManager; // غيرناه من late إلى nullable
 
   @override
   void initState() {
     super.initState();
     dbHelper = DatabaseHelper();
+    backupManager = BackupManager(dbHelper); // تهيئة backupManager هنا
   }
 
   Future<List<Map<String, dynamic>>> _getBeneficiaries() async {
     return await dbHelper.getBeneficiaries();
-  }
-
-  Future<void> _deleteBeneficiary(int id) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('تحذير'),
-        content: const Text('هل أنت متأكد أنك تريد حذف هذا المستفيد؟'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('لا'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('نعم'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true) {
-      await dbHelper.deleteBeneficiary(id);
-      setState(() {});
-    }
   }
 
   @override
@@ -83,55 +62,64 @@ class _HomePageState extends State<HomePage> {
                 itemCount: beneficiaries.length,
                 itemBuilder: (context, index) {
                   final beneficiary = beneficiaries[index];
-                  return Card(
-                    margin:
-                        const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-                    elevation: 4,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(15),
-                    ),
-                    child: ListTile(
-                      leading: beneficiary['image1Path'] != null
-                          ? ClipRRect(
-                              borderRadius: BorderRadius.circular(10),
-                              child: Image.file(File(beneficiary['image1Path']),
-                                  width: 70, height: 70, fit: BoxFit.cover),
-                            )
-                          : CircleAvatar(
-                              radius: 35,
-                              backgroundColor: Colors.teal.shade100,
-                              child: const Icon(Icons.person,
-                                  size: 40, color: Colors.teal),
-                            ),
-                      title: Text(
-                        beneficiary['name'],
-                        style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.teal.shade700),
-                      ),
-                      subtitle: Text(
-                        '${beneficiary['phone']}\n${beneficiary['address']}',
-                        style: TextStyle(
-                            fontSize: 14, color: Colors.teal.shade600),
-                      ),
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => BeneficiaryForm(
-                                beneficiary: beneficiary, isReadOnly: false),
+                  return Column(
+                    children: [
+                      Card(
+                        margin: const EdgeInsets.symmetric(
+                            vertical: 8, horizontal: 16),
+                        elevation: 4,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(15),
+                        ),
+                        child: ListTile(
+                          leading: beneficiary['image1Path'] != null
+                              ? ClipRRect(
+                                  borderRadius: BorderRadius.circular(10),
+                                  child: Image.file(
+                                      File(beneficiary['image1Path']),
+                                      width: 70,
+                                      height: 70,
+                                      fit: BoxFit.cover),
+                                )
+                              : CircleAvatar(
+                                  radius: 35,
+                                  backgroundColor: Colors.teal.shade100,
+                                  child: const Icon(Icons.person,
+                                      size: 40, color: Colors.teal),
+                                ),
+                          title: Text(
+                            beneficiary['name'],
+                            style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.teal.shade700),
                           ),
-                        ).then((_) {
-                          setState(() {});
-                        });
-                      },
-                      trailing: IconButton(
-                        icon: const Icon(Icons.delete, color: Colors.red),
-                        onPressed: () => _deleteBeneficiary(beneficiary['id']),
+                          subtitle: Text(
+                            '${beneficiary['phone']}\n${beneficiary['address']}',
+                            style: TextStyle(
+                                fontSize: 14, color: Colors.teal.shade600),
+                          ),
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => BeneficiaryForm(
+                                    beneficiary: beneficiary,
+                                    isReadOnly: false),
+                              ),
+                            ).then((_) {
+                              setState(() {});
+                            });
+                          },
+                          trailing: IconButton(
+                            icon: const Icon(Icons.delete, color: Colors.red),
+                            onPressed: () =>
+                                _deleteBeneficiary(beneficiary['id']),
+                          ),
+                          isThreeLine: true,
+                        ),
                       ),
-                      isThreeLine: true,
-                    ),
+                    ],
                   );
                 },
               );
@@ -139,19 +127,60 @@ class _HomePageState extends State<HomePage> {
           },
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const BeneficiaryForm()),
-          ).then((_) {
-            setState(() {});
-          });
-        },
-        backgroundColor: Colors.teal,
-        tooltip: 'إضافة مستفيد جديد',
-        child: const Icon(Icons.add),
+      floatingActionButton: Column(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          FloatingActionButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) => const BeneficiaryForm()),
+              ).then((_) {
+                setState(() {});
+              });
+            },
+            backgroundColor: Colors.teal,
+            tooltip: 'إضافة مستفيد جديد',
+            child: const Icon(Icons.add),
+          ),
+          const SizedBox(height: 10),
+          FloatingActionButton(
+            onPressed: () {
+              backupManager
+                  ?.backupToJson(); // تأكدنا من أن backupManager ليس null
+            },
+            backgroundColor: Colors.teal,
+            tooltip: 'حفظ نسخة احتياطية',
+            child: const Icon(Icons.backup),
+          ),
+        ],
       ),
     );
+  }
+
+  Future<void> _deleteBeneficiary(int id) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('تحذير'),
+        content: const Text('هل أنت متأكد أنك تريد حذف هذا المستفيد؟'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('لا'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('نعم'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      await dbHelper.deleteBeneficiary(id);
+      setState(() {}); // لإعادة بناء الواجهة بعد الحذف
+    }
   }
 }
