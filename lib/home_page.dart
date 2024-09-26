@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'beneficiary_form.dart';
 import 'database_helper.dart';
 import 'beneficiary_tile.dart';
@@ -52,17 +53,91 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _backupData() async {
-    await backupManager.backupToJson();
+    final DateTime now = DateTime.now();
+    final String defaultName = DateFormat('yyyy-MM-dd HH:mm:ss').format(now);
+
+    final String? backupName = await showDialog<String>(
+      context: context,
+      builder: (BuildContext context) {
+        String name = defaultName;
+        return AlertDialog(
+          title: const Text('تسمية النسخة الاحتياطية'),
+          content: TextField(
+            onChanged: (value) {
+              name = value;
+            },
+            decoration: InputDecoration(
+              hintText: defaultName,
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('إلغاء'),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+            TextButton(
+              child: const Text('حفظ'),
+              onPressed: () => Navigator.of(context).pop(name),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (backupName != null && backupName.isNotEmpty) {
+      try {
+        await backupManager.backupToJson(backupName);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('تم النسخ الاحتياطي بنجاح: $backupName')),
+        );
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('حدث خطأ أثناء النسخ الاحتياطي: $e')),
+        );
+      }
+    }
   }
 
-  // دالة جديدة لاستعادة البيانات
   Future<void> _restoreData() async {
     try {
-      await backupManager.restoreFromJson();
-      setState(() {}); // تحديث واجهة المستخدم بعد الاستعادة
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('تم استعادة البيانات بنجاح!')),
+      final List<String> backups = await backupManager.getBackupsList();
+
+      if (backups.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('لا توجد نسخ احتياطية متاحة')),
+        );
+        return;
+      }
+
+      final String? selectedBackup = await showDialog<String>(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: const Text('اختر النسخة الاحتياطية للاستعادة'),
+            content: SizedBox(
+              width: double.maxFinite,
+              child: ListView.builder(
+                itemCount: backups.length,
+                itemBuilder: (BuildContext context, int index) {
+                  return ListTile(
+                    title: Text(backups[index]),
+                    onTap: () => Navigator.of(context).pop(backups[index]),
+                  );
+                },
+              ),
+            ),
+          );
+        },
       );
+
+      if (selectedBackup != null) {
+        await backupManager.restoreFromJson(selectedBackup);
+        setState(() {}); // تحديث واجهة المستخدم بعد الاستعادة
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text('تم استعادة البيانات بنجاح من: $selectedBackup')),
+        );
+      }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('حدث خطأ أثناء استعادة البيانات: $e')),
@@ -80,12 +155,7 @@ class _HomePageState extends State<HomePage> {
           IconButton(
             icon: const Icon(Icons.backup),
             tooltip: 'نسخ احتياطي',
-            onPressed: () async {
-              await _backupData();
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('تم النسخ الاحتياطي بنجاح!')),
-              );
-            },
+            onPressed: _backupData,
           ),
           IconButton(
             icon: const Icon(Icons.restore),

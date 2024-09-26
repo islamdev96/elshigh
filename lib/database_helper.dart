@@ -1,9 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:sqflite/sqflite.dart';
-// ignore: depend_on_referenced_packages
 import 'package:path/path.dart';
-// لإدارة الملفات
 
 class DatabaseHelper {
   static final DatabaseHelper _instance = DatabaseHelper._internal();
@@ -44,18 +42,18 @@ class DatabaseHelper {
     );
   }
 
-  // دالة استرجاع البيانات من ملف JSON
+  Future<void> clearAllBeneficiaries() async {
+    final db = await database;
+    await db.delete('beneficiaries');
+  }
+
   Future<void> restoreFromJson(String filePath) async {
     final db = await database;
-    final jsonString =
-        await File(filePath).readAsString(); // قراءة محتويات الملف
-    final List<dynamic> jsonData =
-        json.decode(jsonString); // تحويل النص إلى كائن JSON
+    final jsonString = await File(filePath).readAsString();
+    final List<dynamic> jsonData = json.decode(jsonString);
 
-    // مسح البيانات الحالية
-    await db.delete('beneficiaries');
+    await clearAllBeneficiaries();
 
-    // إدخال البيانات من النسخة الاحتياطية
     for (var beneficiary in jsonData) {
       await db.insert('beneficiaries', beneficiary);
     }

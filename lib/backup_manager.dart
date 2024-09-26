@@ -1,86 +1,63 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'database_helper.dart';
-import 'dart:convert'; // لاستخدام JSON
 
-// إدارة النسخ الاحتياطية
 class BackupManager {
   final DatabaseHelper dbHelper;
 
   BackupManager(this.dbHelper);
 
-  // دالة لحفظ البيانات كـ JSON
-  Future<void> backupToJson() async {
+  Future<void> backupToJson(String backupName) async {
     try {
-      final beneficiaries = await dbHelper.getBeneficiaries();
+      final data = await dbHelper.getBeneficiaries();
+      final jsonData = json.encode(data);
 
-      if (beneficiaries.isNotEmpty) {
-        String jsonData = jsonEncode(beneficiaries);
-        String filePath = await _getFilePath('backup.json');
-        File file = File(filePath);
-        await file.writeAsString(jsonData);
-        print('تم حفظ النسخة الاحتياطية بنجاح: $filePath');
-      } else {
-        print('لا توجد بيانات لحفظ النسخة الاحتياطية.');
-      }
+      final directory = await getApplicationDocumentsDirectory();
+      final file = File('${directory.path}/backup_$backupName.json');
+      await file.writeAsString(jsonData);
     } catch (e) {
-      print('حدث خطأ أثناء حفظ النسخة الاحتياطية: $e');
+      throw Exception('فشل في إنشاء النسخة الاحتياطية: $e');
     }
   }
 
-  // دالة لحفظ البيانات كـ CSV
-  Future<void> backupToCsv() async {
+  Future<void> restoreFromJson(String backupName) async {
     try {
-      final beneficiaries = await dbHelper.getBeneficiaries();
-
-      if (beneficiaries.isNotEmpty) {
-        List<String> csvData = [];
-        // إضافة رؤوس الأعمدة
-        csvData.add('ID,Name,Phone,Address,Notes');
-
-        for (var beneficiary in beneficiaries) {
-          csvData.add(
-              '${beneficiary['id']},${beneficiary['name']},${beneficiary['phone']},${beneficiary['address']},${beneficiary['notes']}');
-        }
-
-        String filePath = await _getFilePath('backup.csv');
-        File file = File(filePath);
-        await file.writeAsString(csvData.join('\n'));
-        print('تم حفظ النسخة الاحتياطية بنجاح: $filePath');
-      } else {
-        print('لا توجد بيانات لحفظ النسخة الاحتياطية.');
-      }
-    } catch (e) {
-      print('حدث خطأ أثناء حفظ النسخة الاحتياطية: $e');
-    }
-  }
-
-  // دالة لاسترجاع البيانات من ملف JSON
-  Future<void> restoreFromJson() async {
-    try {
-      String filePath = await _getFilePath('backup.json');
-      File file = File(filePath);
+      final directory = await getApplicationDocumentsDirectory();
+      final file = File('${directory.path}/backup_$backupName.json');
 
       if (await file.exists()) {
-        String jsonData = await file.readAsString();
-        List<dynamic> beneficiaries = jsonDecode(jsonData);
+        final jsonData = await file.readAsString();
+        final data = json.decode(jsonData) as List<dynamic>;
 
-        for (var beneficiary in beneficiaries) {
-          await dbHelper
-              .insertBeneficiary(Map<String, dynamic>.from(beneficiary));
+        await dbHelper.clearAllBeneficiaries();
+        for (var item in data) {
+          await dbHelper.insertBeneficiary(Map<String, dynamic>.from(item));
         }
-        print('تم استرجاع البيانات بنجاح.');
       } else {
-        print('ملف النسخة الاحتياطية غير موجود.');
+        throw Exception('النسخة الاحتياطية غير موجودة');
       }
     } catch (e) {
-      print('حدث خطأ أثناء استرجاع البيانات: $e');
+      throw Exception('فشل في استعادة النسخة الاحتياطية: $e');
     }
   }
 
-  // الحصول على مسار حفظ الملف
-  Future<String> _getFilePath(String fileName) async {
-    final directory = await getApplicationDocumentsDirectory();
-    return '${directory.path}/$fileName';
+  Future<List<String>> getBackupsList() async {
+    try {
+      final directory = await getApplicationDocumentsDirectory();
+      final files = directory
+          .listSync()
+          .where((file) => file.path.endsWith('.json'))
+          .toList();
+      return files
+          .map((file) => file.path
+              .split('/')
+              .last
+              .replaceAll('backup_', '')
+              .replaceAll('.json', ''))
+          .toList();
+    } catch (e) {
+      throw Exception('فشل في استرداد قائمة النسخ الاحتياطية: $e');
+    }
   }
 }
