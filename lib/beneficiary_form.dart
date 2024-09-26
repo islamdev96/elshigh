@@ -134,8 +134,7 @@ class _BeneficiaryFormState extends State<BeneficiaryForm> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-            widget.isReadOnly ? 'عرض بيانات المستفيد' : 'إضافة مستفيد جديد'),
+        title: Text(widget.isReadOnly ? 'عرض بيانات الشخص' : 'إضافة شخص جديد'),
         backgroundColor: Colors.teal,
       ),
       body: Directionality(

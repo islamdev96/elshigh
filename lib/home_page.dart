@@ -15,16 +15,37 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   late DatabaseHelper dbHelper;
   late BackupManager backupManager;
+  List<Map<String, dynamic>> allBeneficiaries = [];
+  List<Map<String, dynamic>> filteredBeneficiaries = [];
+  TextEditingController searchController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     dbHelper = DatabaseHelper();
     backupManager = BackupManager(dbHelper);
+    _loadBeneficiaries();
   }
 
-  Future<List<Map<String, dynamic>>> _getBeneficiaries() async {
-    return await dbHelper.getBeneficiaries();
+  Future<void> _loadBeneficiaries() async {
+    allBeneficiaries = await dbHelper.getBeneficiaries();
+    setState(() {
+      filteredBeneficiaries = allBeneficiaries;
+    });
+  }
+
+  void _filterBeneficiaries(String query) {
+    setState(() {
+      filteredBeneficiaries = allBeneficiaries.where((beneficiary) {
+        final name = beneficiary['name'].toLowerCase();
+        final spouseName = (beneficiary['spouse_name'] ?? '').toLowerCase();
+        final phone = beneficiary['phone'].toLowerCase();
+        final searchLower = query.toLowerCase();
+        return name.contains(searchLower) ||
+            spouseName.contains(searchLower) ||
+            phone.contains(searchLower);
+      }).toList();
+    });
   }
 
   Future<void> _deleteBeneficiary(int id) async {
@@ -32,7 +53,7 @@ class _HomePageState extends State<HomePage> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('تحذير'),
-        content: const Text('هل أنت متأكد أنك تريد حذف هذا المستفيد؟'),
+        content: const Text('هل أنت متأكد أنك تريد حذف هذا الشخص؟'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -48,17 +69,17 @@ class _HomePageState extends State<HomePage> {
 
     if (confirmed == true) {
       await dbHelper.deleteBeneficiary(id);
-      setState(() {});
+      _loadBeneficiaries();
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Directionality(
-      textDirection: TextDirection.rtl, // تحديد اتجاه النص من اليمين لليسار
+      textDirection: TextDirection.rtl,
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('جمعية خيرية'),
+          title: const Text("عباد الرحمن"),
           backgroundColor: Colors.teal,
         ),
         drawer: Drawer(
@@ -101,45 +122,52 @@ class _HomePageState extends State<HomePage> {
             ],
           ),
         ),
-        body: FutureBuilder<List<Map<String, dynamic>>>(
-          future: _getBeneficiaries(),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(
-                  child: CircularProgressIndicator(color: Colors.teal));
-            } else if (snapshot.hasError) {
-              return Center(
-                  child: Text('حدث خطأ: ${snapshot.error}',
-                      style: const TextStyle(color: Colors.red)));
-            } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-              return const Center(
-                  child: Text('لا يوجد بيانات محفوظة',
-                      style: TextStyle(fontSize: 18, color: Colors.teal)));
-            } else {
-              final beneficiaries = snapshot.data!;
-              return ListView.builder(
-                itemCount: beneficiaries.length,
-                itemBuilder: (context, index) {
-                  final beneficiary = beneficiaries[index];
-                  return BeneficiaryTile(
-                    beneficiary: beneficiary,
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => BeneficiaryForm(
-                              beneficiary: beneficiary, isReadOnly: false),
-                        ),
-                      ).then((_) {
-                        setState(() {});
-                      });
-                    },
-                    onDelete: () => _deleteBeneficiary(beneficiary['id']),
-                  );
-                },
-              );
-            }
-          },
+        body: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: TextField(
+                controller: searchController,
+                decoration: InputDecoration(
+                  labelText: 'بحث',
+                  hintText: 'ابحث عن طريق الاسم أو اسم الزوج أو رقم الهاتف',
+                  prefixIcon: const Icon(Icons.search),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10.0),
+                  ),
+                ),
+                onChanged: _filterBeneficiaries,
+              ),
+            ),
+            Expanded(
+              child: filteredBeneficiaries.isEmpty
+                  ? const Center(
+                      child: Text('لا توجد نتائج',
+                          style: TextStyle(fontSize: 18, color: Colors.teal)))
+                  : ListView.builder(
+                      itemCount: filteredBeneficiaries.length,
+                      itemBuilder: (context, index) {
+                        final beneficiary = filteredBeneficiaries[index];
+                        return BeneficiaryTile(
+                          beneficiary: beneficiary,
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => BeneficiaryForm(
+                                    beneficiary: beneficiary,
+                                    isReadOnly: false),
+                              ),
+                            ).then((_) {
+                              _loadBeneficiaries();
+                            });
+                          },
+                          onDelete: () => _deleteBeneficiary(beneficiary['id']),
+                        );
+                      },
+                    ),
+            ),
+          ],
         ),
         floatingActionButton: FloatingActionButton(
           onPressed: () {
@@ -147,11 +175,11 @@ class _HomePageState extends State<HomePage> {
               context,
               MaterialPageRoute(builder: (context) => const BeneficiaryForm()),
             ).then((_) {
-              setState(() {});
+              _loadBeneficiaries();
             });
           },
           backgroundColor: Colors.teal,
-          tooltip: 'إضافة مستفيد جديد',
+          tooltip: 'إضافة شخص جديد',
           child: const Icon(Icons.add),
         ),
       ),

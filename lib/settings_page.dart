@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:file_picker/file_picker.dart';
 import 'dart:io';
 import 'backup_manager.dart';
 
@@ -36,6 +37,12 @@ class _SettingsPageState extends State<SettingsPage> {
               icon: Icons.restore,
               label: 'استعادة البيانات',
               onPressed: _restoreData,
+            ),
+            const SizedBox(height: 20),
+            _buildSettingButton(
+              icon: Icons.file_upload,
+              label: 'استعادة من ملف خارجي',
+              onPressed: _restoreFromExternalFile,
             ),
             const SizedBox(height: 20),
             _buildSettingButton(
@@ -154,6 +161,40 @@ class _SettingsPageState extends State<SettingsPage> {
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('حدث خطأ أثناء استعادة البيانات: $e')),
+      );
+    }
+  }
+
+  Future<void> _restoreFromExternalFile() async {
+    try {
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.any,
+      );
+
+      if (result != null) {
+        File file = File(result.files.single.path!);
+        if (file.path.toLowerCase().endsWith('.json')) {
+          await widget.backupManager.restoreFromExternalFile(file.path);
+          setState(() {});
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+                content: Text('تم استعادة البيانات بنجاح من الملف الخارجي')),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('الرجاء اختيار ملف بتنسيق JSON صالح')),
+          );
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('تم إلغاء اختيار الملف')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+            content:
+                Text('حدث خطأ أثناء استعادة البيانات من الملف الخارجي: $e')),
       );
     }
   }
