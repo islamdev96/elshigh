@@ -25,20 +25,17 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 1,
+      version: 1, // النسخة الأولى
       onCreate: (db, version) async {
-        await db.execute('''
-          CREATE TABLE beneficiaries(
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT,
-            spouse_name TEXT,
-            phone TEXT,
-            address TEXT,
-            notes TEXT,
-            image1Path TEXT,
-            image2Path TEXT
-          )
-        ''');
+        await db.execute('''CREATE TABLE beneficiaries(
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT,
+          spouse_name TEXT,
+          address TEXT,
+          notes TEXT,
+          image1Path TEXT,
+          image2Path TEXT
+        )''');
       },
     );
   }
