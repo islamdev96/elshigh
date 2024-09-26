@@ -25,13 +25,13 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 2, // تحديث رقم الإصدار
+      version: 1,
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE beneficiaries(
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT,
-            spouse_name TEXT, // إضافة عمود جديد لاسم الزوج
+            spouse_name TEXT,
             phone TEXT,
             address TEXT,
             notes TEXT,
@@ -39,13 +39,6 @@ class DatabaseHelper {
             image2Path TEXT
           )
         ''');
-      },
-      onUpgrade: (db, oldVersion, newVersion) async {
-        if (oldVersion < 2) {
-          // إضافة العمود الجديد للجدول الموجود
-          await db
-              .execute('ALTER TABLE beneficiaries ADD COLUMN spouse_name TEXT');
-        }
       },
     );
   }
@@ -58,7 +51,7 @@ class DatabaseHelper {
   Future<void> restoreFromJson(String filePath) async {
     final db = await database;
     final jsonString = await File(filePath).readAsString();
-    final List<dynamic> jsonData = json.decode(jsonString);
+    final List jsonData = json.decode(jsonString);
 
     await clearAllBeneficiaries();
 
@@ -72,19 +65,20 @@ class DatabaseHelper {
     return await db.query('beneficiaries');
   }
 
-  Future<void> insertBeneficiary(Map<String, dynamic> data) async {
+  Future<int> insertBeneficiary(Map<String, dynamic> data) async {
     final db = await database;
-    await db.insert('beneficiaries', data);
+    return await db.insert('beneficiaries', data);
   }
 
-  Future<void> updateBeneficiary(int id, Map<String, dynamic> data) async {
+  Future<int> updateBeneficiary(int id, Map<String, dynamic> data) async {
     final db = await database;
-    await db.update('beneficiaries', data, where: 'id = ?', whereArgs: [id]);
+    return await db
+        .update('beneficiaries', data, where: 'id = ?', whereArgs: [id]);
   }
 
-  Future<void> deleteBeneficiary(int id) async {
+  Future<int> deleteBeneficiary(int id) async {
     final db = await database;
-    await db.delete('beneficiaries', where: 'id = ?', whereArgs: [id]);
+    return await db.delete('beneficiaries', where: 'id = ?', whereArgs: [id]);
   }
 
   Future<Map<String, dynamic>?> getBeneficiaryById(int id) async {
