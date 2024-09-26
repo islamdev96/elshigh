@@ -197,6 +197,7 @@ class _SettingsPageState extends State<SettingsPage> {
     try {
       FilePickerResult? result = await FilePicker.platform.pickFiles(
         type: FileType.any,
+        allowMultiple: false,
       );
 
       if (result != null) {
@@ -248,7 +249,9 @@ class _SettingsPageState extends State<SettingsPage> {
 
       if (selectedBackup != null) {
         final directory = await getApplicationDocumentsDirectory();
-        final file = File('${directory.path}/backup_$selectedBackup.json');
+        final backupDir =
+            Directory('${directory.path}/backups/$selectedBackup');
+        final file = File('${backupDir.path}/data.json');
 
         if (await file.exists()) {
           await Share.shareXFiles([XFile(file.path)],
