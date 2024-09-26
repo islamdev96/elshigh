@@ -9,7 +9,7 @@ import 'backup_manager.dart';
 class SettingsPage extends StatefulWidget {
   final BackupManager backupManager;
 
-  const SettingsPage({super.key, required this.backupManager});
+  const SettingsPage({Key? key, required this.backupManager}) : super(key: key);
 
   @override
   _SettingsPageState createState() => _SettingsPageState();
@@ -21,54 +21,86 @@ class _SettingsPageState extends State<SettingsPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('الإعدادات'),
-        backgroundColor: Colors.teal,
+        backgroundColor: Theme.of(context).primaryColor,
+        elevation: 0,
       ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            _buildSettingButton(
-              icon: Icons.backup,
-              label: 'نسخ احتياطي',
-              onPressed: _backupData,
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Theme.of(context).primaryColor,
+              Theme.of(context).scaffoldBackgroundColor,
+            ],
+          ),
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                const SizedBox(height: 20),
+                _buildSettingCard(
+                  icon: Icons.backup,
+                  label: 'نسخ احتياطي',
+                  onPressed: _backupData,
+                ),
+                const SizedBox(height: 16),
+                _buildSettingCard(
+                  icon: Icons.restore,
+                  label: 'استعادة البيانات',
+                  onPressed: _restoreData,
+                ),
+                const SizedBox(height: 16),
+                _buildSettingCard(
+                  icon: Icons.file_upload,
+                  label: 'استعادة من ملف خارجي',
+                  onPressed: _restoreFromExternalFile,
+                ),
+                const SizedBox(height: 16),
+                _buildSettingCard(
+                  icon: Icons.share,
+                  label: 'مشاركة النسخة الاحتياطية',
+                  onPressed: _shareBackup,
+                ),
+              ],
             ),
-            const SizedBox(height: 20),
-            _buildSettingButton(
-              icon: Icons.restore,
-              label: 'استعادة البيانات',
-              onPressed: _restoreData,
-            ),
-            const SizedBox(height: 20),
-            _buildSettingButton(
-              icon: Icons.file_upload,
-              label: 'استعادة من ملف خارجي',
-              onPressed: _restoreFromExternalFile,
-            ),
-            const SizedBox(height: 20),
-            _buildSettingButton(
-              icon: Icons.share,
-              label: 'مشاركة النسخة الاحتياطية',
-              onPressed: _shareBackup,
-            ),
-          ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildSettingButton({
+  Widget _buildSettingCard({
     required IconData icon,
     required String label,
     required VoidCallback onPressed,
   }) {
-    return Column(
-      children: [
-        IconButton(
-          icon: Icon(icon, size: 48),
-          onPressed: onPressed,
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+          child: Row(
+            children: [
+              Icon(icon, size: 32, color: Theme.of(context).primaryColor),
+              const SizedBox(width: 24),
+              Expanded(
+                child: Text(
+                  label,
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+              ),
+              Icon(Icons.arrow_forward_ios, color: Colors.grey[400]),
+            ],
+          ),
         ),
-        Text(label),
-      ],
+      ),
     );
   }
 
@@ -83,11 +115,10 @@ class _SettingsPageState extends State<SettingsPage> {
         return AlertDialog(
           title: const Text('تسمية النسخة الاحتياطية'),
           content: TextField(
-            onChanged: (value) {
-              name = value;
-            },
+            onChanged: (value) => name = value,
             decoration: InputDecoration(
               hintText: defaultName,
+              border: OutlineInputBorder(),
             ),
           ),
           actions: <Widget>[
@@ -95,7 +126,7 @@ class _SettingsPageState extends State<SettingsPage> {
               child: const Text('إلغاء'),
               onPressed: () => Navigator.of(context).pop(),
             ),
-            TextButton(
+            ElevatedButton(
               child: const Text('حفظ'),
               onPressed: () => Navigator.of(context).pop(name),
             ),
@@ -107,13 +138,9 @@ class _SettingsPageState extends State<SettingsPage> {
     if (backupName != null && backupName.isNotEmpty) {
       try {
         await widget.backupManager.backupToJson(backupName);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('تم النسخ الاحتياطي بنجاح: $backupName')),
-        );
+        _showSnackBar('تم النسخ الاحتياطي بنجاح: $backupName');
       } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('حدث خطأ أثناء النسخ الاحتياطي: $e')),
-        );
+        _showSnackBar('حدث خطأ أثناء النسخ الاحتياطي: $e');
       }
     }
   }
@@ -123,9 +150,7 @@ class _SettingsPageState extends State<SettingsPage> {
       final List<String> backups = await widget.backupManager.getBackupsList();
 
       if (backups.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('لا توجد نسخ احتياطية متاحة')),
-        );
+        _showSnackBar('لا توجد نسخ احتياطية متاحة');
         return;
       }
 
@@ -153,15 +178,10 @@ class _SettingsPageState extends State<SettingsPage> {
       if (selectedBackup != null) {
         await widget.backupManager.restoreFromJson(selectedBackup);
         setState(() {});
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text('تم استعادة البيانات بنجاح من: $selectedBackup')),
-        );
+        _showSnackBar('تم استعادة البيانات بنجاح من: $selectedBackup');
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('حدث خطأ أثناء استعادة البيانات: $e')),
-      );
+      _showSnackBar('حدث خطأ أثناء استعادة البيانات: $e');
     }
   }
 
@@ -176,26 +196,15 @@ class _SettingsPageState extends State<SettingsPage> {
         if (file.path.toLowerCase().endsWith('.json')) {
           await widget.backupManager.restoreFromExternalFile(file.path);
           setState(() {});
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-                content: Text('تم استعادة البيانات بنجاح من الملف الخارجي')),
-          );
+          _showSnackBar('تم استعادة البيانات بنجاح من الملف الخارجي');
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('الرجاء اختيار ملف بتنسيق JSON صالح')),
-          );
+          _showSnackBar('الرجاء اختيار ملف بتنسيق JSON صالح');
         }
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('تم إلغاء اختيار الملف')),
-        );
+        _showSnackBar('تم إلغاء اختيار الملف');
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content:
-                Text('حدث خطأ أثناء استعادة البيانات من الملف الخارجي: $e')),
-      );
+      _showSnackBar('حدث خطأ أثناء استعادة البيانات من الملف الخارجي: $e');
     }
   }
 
@@ -204,9 +213,7 @@ class _SettingsPageState extends State<SettingsPage> {
       final List<String> backups = await widget.backupManager.getBackupsList();
 
       if (backups.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('لا توجد نسخ احتياطية متاحة للمشاركة')),
-        );
+        _showSnackBar('لا توجد نسخ احتياطية متاحة للمشاركة');
         return;
       }
 
@@ -240,15 +247,21 @@ class _SettingsPageState extends State<SettingsPage> {
               subject: 'مشاركة النسخة الاحتياطية',
               text: 'مشاركة النسخة الاحتياطية: $selectedBackup');
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('ملف النسخة الاحتياطية غير موجود')),
-          );
+          _showSnackBar('ملف النسخة الاحتياطية غير موجود');
         }
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('حدث خطأ أثناء مشاركة النسخة الاحتياطية: $e')),
-      );
+      _showSnackBar('حدث خطأ أثناء مشاركة النسخة الاحتياطية: $e');
     }
+  }
+
+  void _showSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+    );
   }
 }
