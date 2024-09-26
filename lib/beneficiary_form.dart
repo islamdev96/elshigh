@@ -20,6 +20,7 @@ class _BeneficiaryFormState extends State<BeneficiaryForm> {
   File? _image2;
 
   final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _spouseNameController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _addressController = TextEditingController();
   final TextEditingController _notesController = TextEditingController();
@@ -29,6 +30,7 @@ class _BeneficiaryFormState extends State<BeneficiaryForm> {
     super.initState();
     if (widget.beneficiary != null) {
       _nameController.text = widget.beneficiary!['name'];
+      _spouseNameController.text = widget.beneficiary!['spouse_name'] ?? '';
       _phoneController.text = widget.beneficiary!['phone'];
       _addressController.text = widget.beneficiary!['address'];
       _notesController.text = widget.beneficiary!['notes'];
@@ -83,6 +85,7 @@ class _BeneficiaryFormState extends State<BeneficiaryForm> {
     final dbHelper = DatabaseHelper();
     final data = {
       'name': _nameController.text,
+      'spouse_name': _spouseNameController.text,
       'phone': _phoneController.text,
       'address': _addressController.text,
       'notes': _notesController.text,
@@ -172,6 +175,13 @@ class _BeneficiaryFormState extends State<BeneficiaryForm> {
                               }
                               return null;
                             },
+                          ),
+                          const SizedBox(height: 16),
+                          TextFormField(
+                            controller: _spouseNameController,
+                            decoration: _buildInputDecoration(
+                                'اسم الزوج/ة', Icons.person_outline),
+                            readOnly: widget.isReadOnly,
                           ),
                           const SizedBox(height: 16),
                           TextFormField(

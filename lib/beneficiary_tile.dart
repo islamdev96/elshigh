@@ -33,12 +33,26 @@ class BeneficiaryTile extends StatelessWidget {
                 backgroundColor: Colors.teal.shade100,
                 child: const Icon(Icons.person, size: 40, color: Colors.teal),
               ),
-        title: Text(
-          beneficiary['name'],
-          style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Colors.teal.shade700),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              beneficiary['name'],
+              style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.teal.shade700),
+            ),
+            if (beneficiary['spouse_name'] != null &&
+                beneficiary['spouse_name'].isNotEmpty)
+              Text(
+                'الزوج/ة: ${beneficiary['spouse_name']}',
+                style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.normal,
+                    color: Colors.teal.shade600),
+              ),
+          ],
         ),
         subtitle: Text(
           '${beneficiary['phone']}\n${beneficiary['address']}',

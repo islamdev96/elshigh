@@ -25,12 +25,13 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 1,
+      version: 2, // تحديث رقم الإصدار
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE beneficiaries(
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT,
+            spouse_name TEXT, // إضافة عمود جديد لاسم الزوج
             phone TEXT,
             address TEXT,
             notes TEXT,
@@ -38,6 +39,13 @@ class DatabaseHelper {
             image2Path TEXT
           )
         ''');
+      },
+      onUpgrade: (db, oldVersion, newVersion) async {
+        if (oldVersion < 2) {
+          // إضافة العمود الجديد للجدول الموجود
+          await db
+              .execute('ALTER TABLE beneficiaries ADD COLUMN spouse_name TEXT');
+        }
       },
     );
   }
