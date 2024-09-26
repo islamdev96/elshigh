@@ -16,12 +16,16 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
+  final Color primaryGreen = Color(0xFF00796B); // Dark Teal
+  final Color secondaryGreen = Color(0xFF009688); // Medium Teal
+  final Color lightGreen = Color(0xFF4DB6AC); // Light Teal
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('الإعدادات'),
-        backgroundColor: Theme.of(context).primaryColor,
+        backgroundColor: primaryGreen,
         elevation: 0,
       ),
       body: Container(
@@ -30,8 +34,8 @@ class _SettingsPageState extends State<SettingsPage> {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Theme.of(context).primaryColor,
-              Theme.of(context).scaffoldBackgroundColor,
+              primaryGreen,
+              lightGreen,
             ],
           ),
         ),
@@ -80,6 +84,7 @@ class _SettingsPageState extends State<SettingsPage> {
   }) {
     return Card(
       elevation: 4,
+      color: Colors.white,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: InkWell(
         onTap: onPressed,
@@ -88,15 +93,18 @@ class _SettingsPageState extends State<SettingsPage> {
           padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
           child: Row(
             children: [
-              Icon(icon, size: 32, color: Theme.of(context).primaryColor),
+              Icon(icon, size: 32, color: secondaryGreen),
               const SizedBox(width: 24),
               Expanded(
                 child: Text(
                   label,
-                  style: Theme.of(context).textTheme.titleLarge,
+                  style: Theme.of(context)
+                      .textTheme
+                      .titleLarge
+                      ?.copyWith(color: primaryGreen),
                 ),
               ),
-              Icon(Icons.arrow_forward_ios, color: Colors.grey[400]),
+              Icon(Icons.arrow_forward_ios, color: lightGreen),
             ],
           ),
         ),
