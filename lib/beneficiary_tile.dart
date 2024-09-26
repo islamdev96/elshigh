@@ -22,25 +22,16 @@ class BeneficiaryTile extends StatelessWidget {
         borderRadius: BorderRadius.circular(15),
       ),
       child: ListTile(
-        leading: beneficiary['image1Path'] != null &&
-                File(beneficiary['image1Path']).existsSync()
+        leading: beneficiary['image1Path'] != null
             ? ClipRRect(
                 borderRadius: BorderRadius.circular(10),
-                child: Image.file(
-                  File(beneficiary['image1Path']),
-                  width: 70,
-                  height: 70,
-                  fit: BoxFit.cover,
-                ),
+                child: Image.file(File(beneficiary['image1Path']),
+                    width: 70, height: 70, fit: BoxFit.cover),
               )
-            : ClipRRect(
-                borderRadius: BorderRadius.circular(10),
-                child: Image.asset(
-                  'assets/images/placeholder.png', // استبدل بمسار الصورة البديلة
-                  width: 70,
-                  height: 70,
-                  fit: BoxFit.cover,
-                ),
+            : CircleAvatar(
+                radius: 35,
+                backgroundColor: Colors.teal.shade100,
+                child: const Icon(Icons.person, size: 40, color: Colors.teal),
               ),
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

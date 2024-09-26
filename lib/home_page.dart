@@ -1,8 +1,8 @@
+import 'package:elshigh/backup_manager.dart';
 import 'package:flutter/material.dart';
 import 'beneficiary_form.dart';
 import 'database_helper.dart';
 import 'beneficiary_tile.dart';
-import 'backup_manager.dart';
 import 'settings_page.dart';
 
 class HomePage extends StatefulWidget {
@@ -81,6 +81,14 @@ class _HomePageState extends State<HomePage> {
         appBar: AppBar(
           title: const Text("عباد الرحمن"),
           backgroundColor: Colors.teal,
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.refresh),
+              onPressed: () {
+                _loadBeneficiaries(); // Call the function to refresh the data
+              },
+            ),
+          ],
         ),
         drawer: Drawer(
           child: ListView(
