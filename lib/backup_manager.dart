@@ -18,17 +18,29 @@ class BackupManager {
     return appDir;
   }
 
-  Future<String> _copyImageToExternal(String imagePath) async {
+  Future<String> _encodeImageToBase64(String imagePath) async {
     if (imagePath.isEmpty) return '';
     final File imageFile = File(imagePath);
     if (await imageFile.exists()) {
-      final String fileName = path.basename(imageFile.path);
-      final externalDir = await _externalDirectory;
-      final String newPath = '${externalDir.path}/$fileName';
-      await imageFile.copy(newPath);
-      return newPath;
+      final bytes = await imageFile.readAsBytes();
+      return base64Encode(bytes);
     }
     return '';
+  }
+
+  Future<String?> _decodeImageFromBase64(
+      String base64Image, String fileName) async {
+    if (base64Image.isEmpty || fileName.isEmpty) return null;
+    try {
+      final externalDir = await _externalDirectory;
+      final String newPath = '${externalDir.path}/$fileName';
+      final bytes = base64Decode(base64Image);
+      await File(newPath).writeAsBytes(bytes);
+      return newPath;
+    } catch (e) {
+      print('Error decoding image: $e');
+      return null;
+    }
   }
 
   Future<void> backupToJson(String backupName) async {
@@ -42,10 +54,13 @@ class BackupManager {
 
       for (var item in data) {
         final modifiedItem = Map<String, dynamic>.from(item);
-        if (item['image_path'] != null && item['image_path'].isNotEmpty) {
-          final String newPath = await _copyImageToExternal(item['image_path']);
-          modifiedItem['image_path'] =
-              newPath.isNotEmpty ? path.basename(newPath) : null;
+        if (item['image1Path'] != null && item['image1Path'].isNotEmpty) {
+          modifiedItem['image1Path'] =
+              await _encodeImageToBase64(item['image1Path']);
+        }
+        if (item['image2Path'] != null && item['image2Path'].isNotEmpty) {
+          modifiedItem['image2Path'] =
+              await _encodeImageToBase64(item['image2Path']);
         }
         modifiedData.add(modifiedItem);
       }
@@ -69,19 +84,21 @@ class BackupManager {
         final data = json.decode(jsonData) as List;
         await dbHelper.clearAllBeneficiaries();
 
-        final externalDir = await _externalDirectory;
-
         for (var item in data) {
           final restoredItem = Map<String, dynamic>.from(item);
-          if (restoredItem['image_path'] != null &&
-              restoredItem['image_path'].isNotEmpty) {
-            final String fileName = restoredItem['image_path'];
-            final String fullPath = '${externalDir.path}/$fileName';
-            if (await File(fullPath).exists()) {
-              restoredItem['image_path'] = fullPath;
-            } else {
-              restoredItem['image_path'] = null;
-            }
+          if (restoredItem['image1Path'] != null &&
+              restoredItem['image1Path'].isNotEmpty) {
+            final String? newPath = await _decodeImageFromBase64(
+                restoredItem['image1Path'],
+                path.basename(restoredItem['image1Path']));
+            restoredItem['image1Path'] = newPath;
+          }
+          if (restoredItem['image2Path'] != null &&
+              restoredItem['image2Path'].isNotEmpty) {
+            final String? newPath = await _decodeImageFromBase64(
+                restoredItem['image2Path'],
+                path.basename(restoredItem['image2Path']));
+            restoredItem['image2Path'] = newPath;
           }
           await dbHelper.insertBeneficiary(restoredItem);
         }
@@ -98,51 +115,37 @@ class BackupManager {
       final file = File(filePath);
       if (await file.exists()) {
         final jsonData = await file.readAsString();
-        final data = json.decode(jsonData);
+        final data = json.decode(jsonData) as List;
 
-        if (data is! List) {
-          throw const FormatException(
-              'تنسيق البيانات غير صحيح: يجب أن تكون البيانات قائمة');
-        }
-
-        if (data.isEmpty) {
-          throw const FormatException(
-              'الملف فارغ أو لا يحتوي على بيانات صالحة');
-        }
-
-        final externalDir = await _externalDirectory;
         await dbHelper.clearAllBeneficiaries();
 
         for (var item in data) {
-          if (item is! Map<String, dynamic>) {
-            throw const FormatException(
-                'تنسيق البيانات غير صحيح: يجب أن يكون كل عنصر كائنًا');
+          final restoredItem = Map<String, dynamic>.from(item);
+
+          if (restoredItem.containsKey('image1Path') &&
+              restoredItem['image1Path'] != null &&
+              restoredItem['image1Path'].isNotEmpty) {
+            final String? newPath = await _decodeImageFromBase64(
+                restoredItem['image1Path'],
+                path.basename(restoredItem['image1Path']));
+            restoredItem['image1Path'] = newPath;
           }
 
-          final restoredItem = Map<String, dynamic>.from(item);
-          if (restoredItem['image_path'] != null &&
-              restoredItem['image_path'].isNotEmpty) {
-            final String fileName = path.basename(restoredItem['image_path']);
-            final String sourcePath =
-                path.join(path.dirname(filePath), fileName);
-            final String destPath = '${externalDir.path}/$fileName';
-            final File sourceFile = File(sourcePath);
-            if (await sourceFile.exists()) {
-              await sourceFile.copy(destPath);
-              restoredItem['image_path'] = destPath;
-            } else {
-              restoredItem['image_path'] = null;
-            }
+          if (restoredItem.containsKey('image2Path') &&
+              restoredItem['image2Path'] != null &&
+              restoredItem['image2Path'].isNotEmpty) {
+            final String? newPath = await _decodeImageFromBase64(
+                restoredItem['image2Path'],
+                path.basename(restoredItem['image2Path']));
+            restoredItem['image2Path'] = newPath;
           }
+
           await dbHelper.insertBeneficiary(restoredItem);
         }
       } else {
         throw Exception('الملف غير موجود');
       }
     } catch (e) {
-      if (e is FormatException) {
-        rethrow;
-      }
       throw Exception('فشل في استعادة البيانات من الملف الخارجي: $e');
     }
   }
