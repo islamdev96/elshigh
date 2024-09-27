@@ -16,7 +16,6 @@ class BackupManager {
       final backupDir = Directory('${directory.path}/backups/$backupName');
       await backupDir.create(recursive: true);
 
-      // Create a copy of data to modify
       final List<Map<String, dynamic>> modifiedData = [];
 
       for (var item in data) {
@@ -29,8 +28,7 @@ class BackupManager {
             await imageFile.copy(newPath);
             modifiedItem['image_path'] = fileName; // Store only the filename
           } else {
-            modifiedItem['image_path'] =
-                null; // Clear path if image doesn't exist
+            modifiedItem['image_path'] = null;
           }
         }
         modifiedData.add(modifiedItem);
