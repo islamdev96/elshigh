@@ -7,7 +7,8 @@ class BeneficiaryForm extends StatefulWidget {
   final Map<String, dynamic>? beneficiary;
   final bool isReadOnly;
 
-  const BeneficiaryForm({super.key, this.beneficiary, this.isReadOnly = false});
+  const BeneficiaryForm({Key? key, this.beneficiary, this.isReadOnly = false})
+      : super(key: key);
 
   @override
   _BeneficiaryFormState createState() => _BeneficiaryFormState();
@@ -29,11 +30,11 @@ class _BeneficiaryFormState extends State<BeneficiaryForm> {
   void initState() {
     super.initState();
     if (widget.beneficiary != null) {
-      _nameController.text = widget.beneficiary!['name'];
+      _nameController.text = widget.beneficiary!['name'] ?? '';
       _spouseNameController.text = widget.beneficiary!['spouse_name'] ?? '';
-      _phoneController.text = widget.beneficiary!['phone'];
-      _addressController.text = widget.beneficiary!['address'];
-      _notesController.text = widget.beneficiary!['notes'];
+      _phoneController.text = widget.beneficiary!['phone'] ?? '';
+      _addressController.text = widget.beneficiary!['address'] ?? '';
+      _notesController.text = widget.beneficiary!['notes'] ?? '';
       _image1 = widget.beneficiary!['image1Path'] != null
           ? File(widget.beneficiary!['image1Path'])
           : null;
@@ -105,7 +106,8 @@ class _BeneficiaryFormState extends State<BeneficiaryForm> {
         backgroundColor: Colors.green,
       ),
     );
-    Navigator.pop(context);
+
+    Navigator.of(context).pop(true);
   }
 
   InputDecoration _buildInputDecoration(String label, IconData icon) {
@@ -130,202 +132,223 @@ class _BeneficiaryFormState extends State<BeneficiaryForm> {
     );
   }
 
+  Future<bool> _onWillPop() async {
+    if (_nameController.text.isNotEmpty ||
+        _spouseNameController.text.isNotEmpty ||
+        _phoneController.text.isNotEmpty ||
+        _addressController.text.isNotEmpty ||
+        _notesController.text.isNotEmpty ||
+        _image1 != null ||
+        _image2 != null) {
+      return (await showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('حفظ البيانات؟'),
+              content: const Text('هل تريد حفظ البيانات قبل الخروج؟'),
+              actions: <Widget>[
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(false),
+                  child: const Text('لا'),
+                ),
+                TextButton(
+                  onPressed: () async {
+                    await _saveData();
+                    Navigator.of(context).pop(true);
+                  },
+                  child: const Text('نعم'),
+                ),
+              ],
+            ),
+          )) ??
+          false;
+    }
+    return true;
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.isReadOnly ? 'عرض بيانات الشخص' : 'إضافة شخص جديد'),
-        backgroundColor: Colors.teal,
-      ),
-      body: Directionality(
-        textDirection: TextDirection.rtl,
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [Colors.teal.shade50, Colors.white],
+    return WillPopScope(
+      onWillPop: _onWillPop,
+      child: Scaffold(
+        appBar: AppBar(
+          title:
+              Text(widget.isReadOnly ? 'عرض بيانات الشخص' : 'إضافة شخص جديد'),
+          backgroundColor: Colors.teal,
+        ),
+        // ... (باقي كود Scaffold كما هو)
+        body: Directionality(
+          textDirection: TextDirection.rtl,
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [Colors.teal.shade50, Colors.white],
+              ),
             ),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Form(
-              key: _formKey,
-              child: ListView(
-                children: [
-                  Card(
-                    elevation: 4,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(15),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        children: [
-                          TextFormField(
-                            controller: _nameController,
-                            decoration:
-                                _buildInputDecoration('الاسم', Icons.person),
-                            readOnly: widget.isReadOnly,
-                            validator: (value) {
-                              if (!widget.isReadOnly &&
-                                  (value == null || value.isEmpty)) {
-                                return 'يرجى إدخال الاسم';
-                              }
-                              return null;
-                            },
-                          ),
-                          const SizedBox(height: 16),
-                          TextFormField(
-                            controller: _spouseNameController,
-                            decoration: _buildInputDecoration(
-                                'اسم الزوج/ة', Icons.person_outline),
-                            readOnly: widget.isReadOnly,
-                          ),
-                          const SizedBox(height: 16),
-                          TextFormField(
-                            controller: _phoneController,
-                            decoration: _buildInputDecoration(
-                                'رقم الهاتف', Icons.phone),
-                            keyboardType: TextInputType.phone,
-                            readOnly: widget.isReadOnly,
-                            validator: (value) {
-                              if (!widget.isReadOnly &&
-                                  (value == null || value.isEmpty)) {
-                                return 'يرجى إدخال رقم الهاتف';
-                              }
-                              return null;
-                            },
-                          ),
-                          const SizedBox(height: 16),
-                          TextFormField(
-                            controller: _addressController,
-                            decoration: _buildInputDecoration(
-                                'العنوان', Icons.location_on),
-                            readOnly: widget.isReadOnly,
-                            validator: (value) {
-                              if (!widget.isReadOnly &&
-                                  (value == null || value.isEmpty)) {
-                                return 'يرجى إدخال العنوان';
-                              }
-                              return null;
-                            },
-                          ),
-                          const SizedBox(height: 16),
-                          TextFormField(
-                            controller: _notesController,
-                            decoration:
-                                _buildInputDecoration('ملاحظات', Icons.note),
-                            maxLines: 5,
-                            readOnly: widget.isReadOnly,
-                          ),
-                        ],
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Form(
+                key: _formKey,
+                child: ListView(
+                  children: [
+                    Card(
+                      elevation: 4,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(15),
                       ),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  Card(
-                    elevation: 4,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(15),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        children: [
-                          const Text(
-                            'الصور',
-                            style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.teal),
-                          ),
-                          const SizedBox(height: 16),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceAround,
-                            children: [
-                              Column(
-                                children: [
-                                  ElevatedButton.icon(
-                                    onPressed: widget.isReadOnly
-                                        ? null
-                                        : () => _pickImage(1),
-                                    icon: const Icon(Icons.image),
-                                    label: const Text('الصورة الأولى'),
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.teal,
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(10),
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 10),
-                                  if (_image1 != null)
-                                    ClipRRect(
-                                      borderRadius: BorderRadius.circular(10),
-                                      child: Image.file(_image1!,
-                                          width: 100,
-                                          height: 100,
-                                          fit: BoxFit.cover),
-                                    ),
-                                ],
-                              ),
-                              Column(
-                                children: [
-                                  ElevatedButton.icon(
-                                    onPressed: widget.isReadOnly
-                                        ? null
-                                        : () => _pickImage(2),
-                                    icon: const Icon(Icons.image),
-                                    label: const Text('الصورة الثانية'),
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.teal,
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(10),
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 10),
-                                  if (_image2 != null)
-                                    ClipRRect(
-                                      borderRadius: BorderRadius.circular(10),
-                                      child: Image.file(_image2!,
-                                          width: 100,
-                                          height: 100,
-                                          fit: BoxFit.cover),
-                                    ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  if (!widget.isReadOnly)
-                    ElevatedButton(
-                      onPressed: () {
-                        if (_formKey.currentState!.validate()) {
-                          _saveData();
-                        }
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.teal,
-                        padding: const EdgeInsets.symmetric(vertical: 15),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
+                          children: [
+                            TextFormField(
+                              controller: _nameController,
+                              decoration:
+                                  _buildInputDecoration('الاسم', Icons.person),
+                              readOnly: widget.isReadOnly,
+                              validator: (value) {
+                                if (!widget.isReadOnly &&
+                                    (value == null || value.isEmpty)) {
+                                  return 'يرجى إدخال الاسم';
+                                }
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: 16),
+                            TextFormField(
+                              controller: _spouseNameController,
+                              decoration: _buildInputDecoration(
+                                  'اسم الزوج/ة', Icons.person_outline),
+                              readOnly: widget.isReadOnly,
+                            ),
+                            const SizedBox(height: 16),
+                            TextFormField(
+                              controller: _phoneController,
+                              decoration: _buildInputDecoration(
+                                  'رقم الهاتف', Icons.phone),
+                              keyboardType: TextInputType.phone,
+                              readOnly: widget.isReadOnly,
+                              validator: (value) {
+                                if (!widget.isReadOnly &&
+                                    (value == null || value.isEmpty)) {
+                                  return 'يرجى إدخال رقم الهاتف';
+                                }
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: 16),
+                            TextFormField(
+                              controller: _addressController,
+                              decoration: _buildInputDecoration(
+                                  'العنوان', Icons.location_on),
+                              readOnly: widget.isReadOnly,
+                              validator: (value) {
+                                if (!widget.isReadOnly &&
+                                    (value == null || value.isEmpty)) {
+                                  return 'يرجى إدخال العنوان';
+                                }
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: 16),
+                            TextFormField(
+                              controller: _notesController,
+                              decoration:
+                                  _buildInputDecoration('ملاحظات', Icons.note),
+                              maxLines: 5,
+                              readOnly: widget.isReadOnly,
+                            ),
+                          ],
                         ),
                       ),
-                      child: const Text('حفظ البيانات',
-                          style: TextStyle(fontSize: 18)),
                     ),
-                ],
+                    const SizedBox(height: 20),
+                    Card(
+                      elevation: 4,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(15),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
+                          children: [
+                            const Text(
+                              'الصور',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.teal,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceAround,
+                              children: [
+                                _buildImagePickerColumn(1, _image1),
+                                _buildImagePickerColumn(2, _image2),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    if (!widget.isReadOnly)
+                      ElevatedButton(
+                        onPressed: () {
+                          if (_formKey.currentState!.validate()) {
+                            _saveData();
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.teal,
+                          padding: const EdgeInsets.symmetric(vertical: 15),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                        child: const Text(
+                          'حفظ البيانات',
+                          style: TextStyle(fontSize: 18),
+                        ),
+                      ),
+                  ],
+                ),
               ),
             ),
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildImagePickerColumn(int imageNumber, File? image) {
+    return Column(
+      children: [
+        ElevatedButton.icon(
+          onPressed: widget.isReadOnly ? null : () => _pickImage(imageNumber),
+          icon: const Icon(Icons.image),
+          label: Text(imageNumber == 1 ? 'الصورة الأولى' : 'الصورة الثانية'),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.teal,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+        ),
+        const SizedBox(height: 10),
+        image != null
+            ? ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: Image.file(
+                  image,
+                  width: 100,
+                  height: 100,
+                  fit: BoxFit.cover,
+                ),
+              )
+            : const SizedBox.shrink(),
+      ],
     );
   }
 }
