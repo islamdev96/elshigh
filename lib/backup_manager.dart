@@ -9,6 +9,28 @@ class BackupManager {
 
   BackupManager(this.dbHelper);
 
+  Future<Directory> get _externalDirectory async {
+    final directory = await getExternalStorageDirectory();
+    final appDir = Directory('${directory!.path}/MyAppImages');
+    if (!await appDir.exists()) {
+      await appDir.create(recursive: true);
+    }
+    return appDir;
+  }
+
+  Future<String> _copyImageToExternal(String imagePath) async {
+    if (imagePath.isEmpty) return '';
+    final File imageFile = File(imagePath);
+    if (await imageFile.exists()) {
+      final String fileName = path.basename(imageFile.path);
+      final externalDir = await _externalDirectory;
+      final String newPath = '${externalDir.path}/$fileName';
+      await imageFile.copy(newPath);
+      return newPath;
+    }
+    return '';
+  }
+
   Future<void> backupToJson(String backupName) async {
     try {
       final data = await dbHelper.getBeneficiaries();
@@ -21,15 +43,9 @@ class BackupManager {
       for (var item in data) {
         final modifiedItem = Map<String, dynamic>.from(item);
         if (item['image_path'] != null && item['image_path'].isNotEmpty) {
-          final File imageFile = File(item['image_path']);
-          if (await imageFile.exists()) {
-            final String fileName = path.basename(imageFile.path);
-            final String newPath = '${backupDir.path}/$fileName';
-            await imageFile.copy(newPath);
-            modifiedItem['image_path'] = fileName; // Store only the filename
-          } else {
-            modifiedItem['image_path'] = null;
-          }
+          final String newPath = await _copyImageToExternal(item['image_path']);
+          modifiedItem['image_path'] =
+              newPath.isNotEmpty ? path.basename(newPath) : null;
         }
         modifiedData.add(modifiedItem);
       }
@@ -53,17 +69,16 @@ class BackupManager {
         final data = json.decode(jsonData) as List;
         await dbHelper.clearAllBeneficiaries();
 
+        final externalDir = await _externalDirectory;
+
         for (var item in data) {
           final restoredItem = Map<String, dynamic>.from(item);
           if (restoredItem['image_path'] != null &&
               restoredItem['image_path'].isNotEmpty) {
             final String fileName = restoredItem['image_path'];
-            final String sourcePath = '${backupDir.path}/$fileName';
-            final String destPath = '${directory.path}/$fileName';
-            final File sourceFile = File(sourcePath);
-            if (await sourceFile.exists()) {
-              await sourceFile.copy(destPath);
-              restoredItem['image_path'] = destPath;
+            final String fullPath = '${externalDir.path}/$fileName';
+            if (await File(fullPath).exists()) {
+              restoredItem['image_path'] = fullPath;
             } else {
               restoredItem['image_path'] = null;
             }
@@ -75,23 +90,6 @@ class BackupManager {
       }
     } catch (e) {
       throw Exception('فشل في استعادة النسخة الاحتياطية: $e');
-    }
-  }
-
-  Future<List<String>> getBackupsList() async {
-    try {
-      final directory = await getApplicationDocumentsDirectory();
-      final backupsDir = Directory('${directory.path}/backups');
-      if (!await backupsDir.exists()) {
-        return [];
-      }
-      final directories = await backupsDir
-          .list()
-          .where((entity) => entity is Directory)
-          .toList();
-      return directories.map((dir) => path.basename(dir.path)).toList();
-    } catch (e) {
-      throw Exception('فشل في استرداد قائمة النسخ الاحتياطية: $e');
     }
   }
 
@@ -112,7 +110,7 @@ class BackupManager {
               'الملف فارغ أو لا يحتوي على بيانات صالحة');
         }
 
-        final directory = await getApplicationDocumentsDirectory();
+        final externalDir = await _externalDirectory;
         await dbHelper.clearAllBeneficiaries();
 
         for (var item in data) {
@@ -127,7 +125,7 @@ class BackupManager {
             final String fileName = path.basename(restoredItem['image_path']);
             final String sourcePath =
                 path.join(path.dirname(filePath), fileName);
-            final String destPath = '${directory.path}/$fileName';
+            final String destPath = '${externalDir.path}/$fileName';
             final File sourceFile = File(sourcePath);
             if (await sourceFile.exists()) {
               await sourceFile.copy(destPath);
@@ -146,6 +144,23 @@ class BackupManager {
         rethrow;
       }
       throw Exception('فشل في استعادة البيانات من الملف الخارجي: $e');
+    }
+  }
+
+  Future<List<String>> getBackupsList() async {
+    try {
+      final directory = await getApplicationDocumentsDirectory();
+      final backupsDir = Directory('${directory.path}/backups');
+      if (!await backupsDir.exists()) {
+        return [];
+      }
+      final directories = await backupsDir
+          .list()
+          .where((entity) => entity is Directory)
+          .toList();
+      return directories.map((dir) => path.basename(dir.path)).toList();
+    } catch (e) {
+      throw Exception('فشل في استرداد قائمة النسخ الاحتياطية: $e');
     }
   }
 }
