@@ -12,7 +12,6 @@ class HomePage extends StatefulWidget {
   _HomePageState createState() => _HomePageState();
 }
 
-///
 class _HomePageState extends State<HomePage> {
   late DatabaseHelper dbHelper;
   late BackupManager backupManager;
@@ -80,50 +79,50 @@ class _HomePageState extends State<HomePage> {
       textDirection: TextDirection.rtl,
       child: Scaffold(
         appBar: AppBar(
-          title: const Text("عباد الرحمن"),
+          title: const Text(
+            "عباد الرحمن",
+            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+          ),
           backgroundColor: Colors.teal,
           actions: [
             IconButton(
               icon: const Icon(Icons.refresh),
-              onPressed: () {
-                _loadBeneficiaries(); // Call the function to refresh the data
-              },
+              onPressed: _loadBeneficiaries,
+              tooltip: 'تحديث البيانات',
             ),
           ],
+          elevation: 4,
         ),
         drawer: Drawer(
-          child: ListView(
-            padding: EdgeInsets.zero,
-            children: <Widget>[
-              const DrawerHeader(
+          child: Column(
+            children: [
+              DrawerHeader(
                 decoration: BoxDecoration(
-                  color: Colors.teal,
+                  color: Colors.teal.shade700,
                 ),
-                child: Text(
-                  'القائمة',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 24,
+                child: const Center(
+                  child: Text(
+                    'القائمة',
+                    style: TextStyle(color: Colors.white, fontSize: 28),
                   ),
                 ),
               ),
-              ListTile(
-                leading: const Icon(Icons.home),
-                title: const Text('الصفحة الرئيسية'),
-                onTap: () {
-                  Navigator.pop(context);
-                },
+              _buildDrawerItem(
+                icon: Icons.home,
+                text: 'الصفحة الرئيسية',
+                onTap: () => Navigator.pop(context),
               ),
-              ListTile(
-                leading: const Icon(Icons.settings),
-                title: const Text('الإعدادات'),
+              _buildDrawerItem(
+                icon: Icons.settings,
+                text: 'الإعدادات',
                 onTap: () {
                   Navigator.pop(context);
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) =>
-                          SettingsPage(backupManager: backupManager),
+                      builder: (context) => SettingsPage(
+                        backupManager: backupManager,
+                      ),
                     ),
                   );
                 },
@@ -134,15 +133,16 @@ class _HomePageState extends State<HomePage> {
         body: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.all(8.0),
+              padding: const EdgeInsets.all(10.0),
               child: TextField(
                 controller: searchController,
                 decoration: InputDecoration(
-                  labelText: 'بحث',
                   hintText: 'ابحث عن طريق الاسم أو اسم الزوج أو رقم الهاتف',
                   prefixIcon: const Icon(Icons.search),
+                  contentPadding:
+                      const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10.0),
+                    borderRadius: BorderRadius.circular(15.0),
                   ),
                 ),
                 onChanged: _filterBeneficiaries,
@@ -151,9 +151,13 @@ class _HomePageState extends State<HomePage> {
             Expanded(
               child: filteredBeneficiaries.isEmpty
                   ? const Center(
-                      child: Text('لا توجد نتائج',
-                          style: TextStyle(fontSize: 18, color: Colors.teal)))
+                      child: Text(
+                        'لا توجد نتائج',
+                        style: TextStyle(fontSize: 20, color: Colors.teal),
+                      ),
+                    )
                   : ListView.builder(
+                      padding: const EdgeInsets.all(8.0),
                       itemCount: filteredBeneficiaries.length,
                       itemBuilder: (context, index) {
                         final beneficiary = filteredBeneficiaries[index];
@@ -164,12 +168,11 @@ class _HomePageState extends State<HomePage> {
                               context,
                               MaterialPageRoute(
                                 builder: (context) => BeneficiaryForm(
-                                    beneficiary: beneficiary,
-                                    isReadOnly: false),
+                                  beneficiary: beneficiary,
+                                  isReadOnly: false,
+                                ),
                               ),
-                            ).then((_) {
-                              _loadBeneficiaries();
-                            });
+                            ).then((_) => _loadBeneficiaries());
                           },
                           onDelete: () => _deleteBeneficiary(beneficiary['id']),
                         );
@@ -183,14 +186,29 @@ class _HomePageState extends State<HomePage> {
             Navigator.push(
               context,
               MaterialPageRoute(builder: (context) => const BeneficiaryForm()),
-            ).then((_) {
-              _loadBeneficiaries();
-            });
+            ).then((_) => _loadBeneficiaries());
           },
           backgroundColor: Colors.teal,
           tooltip: 'إضافة شخص جديد',
           child: const Icon(Icons.add),
         ),
+      ),
+    );
+  }
+
+  Widget _buildDrawerItem(
+      {required IconData icon,
+      required String text,
+      required VoidCallback onTap}) {
+    return ListTile(
+      leading: Icon(icon, color: Colors.teal.shade700),
+      title: Text(text,
+          style: TextStyle(fontSize: 18, color: Colors.teal.shade800)),
+      onTap: onTap,
+      contentPadding:
+          const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(10),
       ),
     );
   }
