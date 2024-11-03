@@ -33,7 +33,6 @@ class _BeneficiaryFormState extends State<BeneficiaryForm> {
   final TextEditingController _propertyTypeController = TextEditingController();
   final TextEditingController _notesController = TextEditingController();
 
-  // Theme colors
   final Color primaryColor = Colors.teal;
   final Color secondaryColor = Colors.tealAccent;
   final Color backgroundColor = Colors.grey[100]!;
@@ -53,7 +52,6 @@ class _BeneficiaryFormState extends State<BeneficiaryForm> {
       _addressController.text = widget.beneficiary!['address'] ?? '';
       _propertyTypeController.text = widget.beneficiary!['property_type'] ?? '';
       _notesController.text = widget.beneficiary!['notes'] ?? '';
-
       if (widget.beneficiary!['image1Path'] != null) {
         _image1 = File(widget.beneficiary!['image1Path']);
       }
@@ -144,100 +142,8 @@ class _BeneficiaryFormState extends State<BeneficiaryForm> {
         ),
         style: const TextStyle(fontSize: 16),
         readOnly: widget.isReadOnly,
-        validator: (value) {
-          if (!widget.isReadOnly && (value == null || value.isEmpty)) {
-            return 'هذا الحقل مطلوب';
-          }
-          return null;
-        },
       ),
     );
-  }
-
-  Widget _buildImagePickerColumn(int imageNumber, File? image) {
-    return Column(
-      children: [
-        if (!widget.isReadOnly)
-          ElevatedButton.icon(
-            onPressed: () => _pickImage(imageNumber),
-            icon: const Icon(Icons.camera_alt),
-            label: Text('صورة $imageNumber'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: primaryColor,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-          ),
-        const SizedBox(height: 12),
-        if (image != null)
-          Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  spreadRadius: 1,
-                  blurRadius: 5,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: Image.file(
-                image,
-                width: 150,
-                height: 150,
-                fit: BoxFit.cover,
-              ),
-            ),
-          ),
-      ],
-    );
-  }
-
-  Future<void> _pickImage(int imageNumber) async {
-    final pickedFile = await showDialog<XFile?>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('اختيار صورة'),
-        content: const Text('اختر طريقة التقاط الصورة:'),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        actions: [
-          TextButton.icon(
-            onPressed: () async {
-              final image = await picker.pickImage(source: ImageSource.gallery);
-              Navigator.pop(context, image);
-            },
-            icon: const Icon(Icons.photo_library),
-            label: const Text('المعرض'),
-          ),
-          TextButton.icon(
-            onPressed: () async {
-              final image = await picker.pickImage(source: ImageSource.camera);
-              Navigator.pop(context, image);
-            },
-            icon: const Icon(Icons.camera_alt),
-            label: const Text('الكاميرا'),
-          ),
-        ],
-      ),
-    );
-
-    if (pickedFile != null) {
-      setState(() {
-        if (imageNumber == 1) {
-          _image1 = File(pickedFile.path);
-        } else {
-          _image2 = File(pickedFile.path);
-        }
-      });
-    }
   }
 
   @override
@@ -275,9 +181,7 @@ class _BeneficiaryFormState extends State<BeneficiaryForm> {
                           const Text(
                             'المعلومات الأساسية',
                             style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
+                                fontSize: 18, fontWeight: FontWeight.bold),
                           ),
                           const SizedBox(height: 16),
                           _buildFormField('المنطقة', _regionController),
@@ -285,16 +189,11 @@ class _BeneficiaryFormState extends State<BeneficiaryForm> {
                           _buildFormField('اسم الزوج/ة', _spouseNameController),
                           _buildFormField('الحالة', _statusController),
                           _buildFormField(
-                            'عدد الأفراد',
-                            _familyMembersController,
-                            isNumber: true,
-                          ),
+                              'عدد الأفراد', _familyMembersController,
+                              isNumber: true),
                           _buildFormField('الدرجة', _gradeController),
-                          _buildFormField(
-                            'رقم التليفون',
-                            _phoneController,
-                            isPhone: true,
-                          ),
+                          _buildFormField('رقم التليفون', _phoneController,
+                              isPhone: true),
                         ],
                       ),
                     ),
@@ -313,21 +212,13 @@ class _BeneficiaryFormState extends State<BeneficiaryForm> {
                           const Text(
                             'معلومات السكن',
                             style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
+                                fontSize: 18, fontWeight: FontWeight.bold),
                           ),
                           const SizedBox(height: 16),
                           _buildFormField('العنوان', _addressController),
-                          _buildFormField(
-                            'نوع السكن',
-                            _propertyTypeController,
-                          ),
-                          _buildFormField(
-                            'ملاحظات',
-                            _notesController,
-                            isMultiLine: true,
-                          ),
+                          _buildFormField('نوع السكن', _propertyTypeController),
+                          _buildFormField('ملاحظات', _notesController,
+                              isMultiLine: true),
                         ],
                       ),
                     ),
@@ -346,9 +237,7 @@ class _BeneficiaryFormState extends State<BeneficiaryForm> {
                           const Text(
                             'الصور',
                             style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
+                                fontSize: 18, fontWeight: FontWeight.bold),
                           ),
                           const SizedBox(height: 16),
                           Row(
@@ -362,35 +251,64 @@ class _BeneficiaryFormState extends State<BeneficiaryForm> {
                       ),
                     ),
                   ),
-                  if (!widget.isReadOnly) const SizedBox(height: 24),
                   if (!widget.isReadOnly)
                     ElevatedButton(
-                      onPressed: () {
-                        if (_formKey.currentState!.validate()) {
-                          _saveData();
-                        }
-                      },
+                      onPressed: _saveData,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: primaryColor,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        elevation: 4,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
                       ),
                       child: const Text(
                         'حفظ البيانات',
-                        style: TextStyle(fontSize: 18),
+                        style: TextStyle(fontSize: 18, color: Colors.white),
                       ),
                     ),
-                  const SizedBox(height: 16),
                 ],
               ),
             ),
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildImagePickerColumn(int imageNumber, File? imageFile) {
+    return Column(
+      children: [
+        GestureDetector(
+          onTap: widget.isReadOnly
+              ? null
+              : () async {
+                  final pickedFile =
+                      await picker.pickImage(source: ImageSource.gallery);
+                  setState(() {
+                    if (imageNumber == 1) {
+                      _image1 =
+                          pickedFile != null ? File(pickedFile.path) : null;
+                    } else {
+                      _image2 =
+                          pickedFile != null ? File(pickedFile.path) : null;
+                    }
+                  });
+                },
+          child: CircleAvatar(
+            radius: 50,
+            backgroundImage: imageFile != null ? FileImage(imageFile) : null,
+            child: imageFile == null
+                ? Icon(
+                    Icons.add_a_photo,
+                    color: Colors.grey[700],
+                    size: 30,
+                  )
+                : null,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(imageNumber == 1 ? 'الصورة الأولى' : 'الصورة الثانية'),
+      ],
     );
   }
 }
