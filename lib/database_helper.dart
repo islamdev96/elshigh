@@ -7,95 +7,104 @@ class DatabaseHelper {
   static final DatabaseHelper _instance = DatabaseHelper._internal();
   static Database? _database;
 
-  // Constructor
   DatabaseHelper._internal();
 
-  // Factory to return the same instance
-  factory DatabaseHelper() {
-    return _instance;
-  }
+  factory DatabaseHelper() => _instance;
 
-  // Initialize the database
   Future<Database> get database async {
-    if (_database != null) return _database!;
-    _database = await _initDatabase();
+    _database ??= await _initDatabase();
     return _database!;
   }
 
-  // Create the database and the beneficiaries table
   Future<Database> _initDatabase() async {
     final dbPath = await getDatabasesPath();
     final path = join(dbPath, 'charity.db');
 
     return await openDatabase(
       path,
-      version: 1, // First version
+      version: 1, // Start with version 1
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE beneficiaries (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
+            region TEXT,
             name TEXT,
             spouse_name TEXT,
+            status TEXT,
+            family_members INTEGER,
+            grade TEXT,
             phone TEXT,
             address TEXT,
+            property_type TEXT,
             notes TEXT,
             image1Path TEXT,
             image2Path TEXT
           )
         ''');
       },
+      onUpgrade: (db, oldVersion, newVersion) async {
+        // Handle database upgrades here if needed in the future.
+        // This will allow you to modify the database schema
+        // without losing existing data when you increment the version number.
+        // Example:
+        // if (oldVersion < 2) {
+        //   await db.execute("ALTER TABLE beneficiaries ADD COLUMN new_column TEXT");
+        // }
+      },
     );
   }
 
-  // Clear all beneficiaries from the database
   Future<void> clearAllBeneficiaries() async {
     final db = await database;
     await db.delete('beneficiaries');
   }
 
-  // Restore beneficiaries data from a JSON file
   Future<void> restoreFromJson(String filePath) async {
     final db = await database;
     final jsonString = await File(filePath).readAsString();
     final List jsonData = json.decode(jsonString);
 
-    await clearAllBeneficiaries();
+    await clearAllBeneficiaries(); // Clear existing data before restoring
 
+    final batch = db.batch(); // Use batch for efficiency
     for (var beneficiary in jsonData) {
-      await db.insert('beneficiaries', beneficiary);
+      batch.insert('beneficiaries', beneficiary);
     }
+    await batch.commit(noResult: true); // Commit the batch insert
   }
 
-  // Retrieve all beneficiaries from the database
   Future<List<Map<String, dynamic>>> getBeneficiaries() async {
     final db = await database;
     return await db.query('beneficiaries');
   }
 
-  // Insert a new beneficiary into the database
   Future<int> insertBeneficiary(Map<String, dynamic> data) async {
     final db = await database;
     return await db.insert('beneficiaries', data);
   }
 
-  // Update an existing beneficiary
   Future<int> updateBeneficiary(int id, Map<String, dynamic> data) async {
     final db = await database;
-    return await db
-        .update('beneficiaries', data, where: 'id = ?', whereArgs: [id]);
+    return await db.update(
+      'beneficiaries',
+      data,
+      where: 'id = ?',
+      whereArgs: [id],
+    );
   }
 
-  // Delete a beneficiary by ID
   Future<int> deleteBeneficiary(int id) async {
     final db = await database;
     return await db.delete('beneficiaries', where: 'id = ?', whereArgs: [id]);
   }
 
-  // Get a beneficiary by ID
   Future<Map<String, dynamic>?> getBeneficiaryById(int id) async {
     final db = await database;
-    final results =
-        await db.query('beneficiaries', where: 'id = ?', whereArgs: [id]);
+    final results = await db.query(
+      'beneficiaries',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
     return results.isNotEmpty ? results.first : null;
   }
 }
