@@ -34,16 +34,21 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
+  /// دالة لتصفية المستفيدين بناءً على البحث بالاسم، اسم الزوج/ة، رقم الهاتف أو المنطقة.
   void _filterBeneficiaries(String query) {
     setState(() {
       filteredBeneficiaries = allBeneficiaries.where((beneficiary) {
         final name = beneficiary['name'].toLowerCase();
         final spouseName = (beneficiary['spouse_name'] ?? '').toLowerCase();
         final phone = beneficiary['phone'].toLowerCase();
+        final region = (beneficiary['region'] ?? '').toLowerCase(); // المنطقة
         final searchLower = query.toLowerCase();
+
+        // التحقق من أن البحث يحتوي على الاسم أو اسم الزوج/ة أو رقم الهاتف أو المنطقة.
         return name.contains(searchLower) ||
             spouseName.contains(searchLower) ||
-            phone.contains(searchLower);
+            phone.contains(searchLower) ||
+            region.contains(searchLower); // إضافة المنطقة إلى البحث
       }).toList();
     });
   }
@@ -137,7 +142,8 @@ class _HomePageState extends State<HomePage> {
               child: TextField(
                 controller: searchController,
                 decoration: InputDecoration(
-                  hintText: 'ابحث عن طريق الاسم أو اسم الزوج أو رقم الهاتف',
+                  hintText:
+                      'ابحث عن طريق الاسم، اسم الزوج، رقم الهاتف، أو المنطقة',
                   prefixIcon: const Icon(Icons.search),
                   contentPadding:
                       const EdgeInsets.symmetric(vertical: 10, horizontal: 20),

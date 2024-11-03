@@ -16,32 +16,40 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
-  final Color primaryGreen = Color(0xFF00796B); // Dark Teal
-  final Color secondaryGreen = Color(0xFF009688); // Medium Teal
-  final Color lightGreen = Color(0xFF4DB6AC); // Light Teal
+  final Color primaryGreen = Color(0xFF00796B);
+  final Color secondaryGreen = Color(0xFF009688);
+  final Color lightGreen = Color(0xFF4DB6AC);
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('الإعدادات'),
-        backgroundColor: primaryGreen,
+        title: const Text('الإعدادات',
+            style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold)),
+        backgroundColor: Colors.transparent,
         elevation: 0,
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [primaryGreen, secondaryGreen],
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+            ),
+          ),
+        ),
       ),
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              primaryGreen,
-              lightGreen,
-            ],
+            colors: [primaryGreen.withOpacity(0.8), lightGreen],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
         ),
         child: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.all(16.0),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 16.0, vertical: 20.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
@@ -83,28 +91,30 @@ class _SettingsPageState extends State<SettingsPage> {
     required VoidCallback onPressed,
   }) {
     return Card(
-      elevation: 4,
+      elevation: 8,
+      shadowColor: Colors.tealAccent,
       color: Colors.white,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       child: InkWell(
         onTap: onPressed,
-        borderRadius: BorderRadius.circular(12),
+        splashColor: lightGreen.withOpacity(0.3),
+        borderRadius: BorderRadius.circular(20),
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+          padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 24),
           child: Row(
             children: [
-              Icon(icon, size: 32, color: secondaryGreen),
+              Icon(icon, size: 36, color: primaryGreen),
               const SizedBox(width: 24),
               Expanded(
                 child: Text(
                   label,
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleLarge
-                      ?.copyWith(color: primaryGreen),
+                  style: TextStyle(
+                      fontSize: 18,
+                      color: primaryGreen,
+                      fontWeight: FontWeight.w600),
                 ),
               ),
-              Icon(Icons.arrow_forward_ios, color: lightGreen),
+              Icon(Icons.arrow_forward_ios, color: secondaryGreen),
             ],
           ),
         ),
@@ -269,8 +279,9 @@ class _SettingsPageState extends State<SettingsPage> {
   void _showSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message),
+        content: Text(message, style: TextStyle(fontSize: 16)),
         behavior: SnackBarBehavior.floating,
+        backgroundColor: Colors.black87,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
     );
