@@ -2,7 +2,7 @@ import 'package:elshigh/backup_manager.dart';
 import 'package:flutter/material.dart';
 import 'beneficiary_form.dart';
 import 'database_helper.dart';
-import 'beneficiary_tile.dart';
+import 'home/beneficiary_tile.dart';
 import 'settings_page.dart';
 
 class HomePage extends StatefulWidget {
