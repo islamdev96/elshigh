@@ -10,6 +10,18 @@ class ImageViewer extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.black.withOpacity(0.5),
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          color: Colors.white,
+          onPressed: () {
+            // Navigate back to the previous page
+            Navigator.of(context).pop();
+          },
+        ),
+      ),
       body: SafeArea(
         child: PageView.builder(
           itemCount: imagePaths.length,
