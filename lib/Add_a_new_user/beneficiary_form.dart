@@ -1,7 +1,7 @@
+import 'package:elshigh/Add_a_new_user/image_picker_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:image_picker/image_picker.dart';
-import 'data/database_helper.dart';
+import '../data/database_helper.dart'; // تأكد من أن هذا المسار صحيح بالنسبة لمشروعك
 import 'dart:io';
 
 class BeneficiaryForm extends StatefulWidget {
@@ -17,7 +17,6 @@ class BeneficiaryForm extends StatefulWidget {
 
 class _BeneficiaryFormState extends State<BeneficiaryForm> {
   final _formKey = GlobalKey<FormState>();
-  final picker = ImagePicker();
   File? _image1;
   File? _image2;
 
@@ -41,28 +40,30 @@ class _BeneficiaryFormState extends State<BeneficiaryForm> {
   void initState() {
     super.initState();
     if (widget.beneficiary != null) {
-      _regionController.text = widget.beneficiary!['region'] ?? '';
-      _nameController.text = widget.beneficiary!['name'] ?? '';
-      _spouseNameController.text = widget.beneficiary!['spouse_name'] ?? '';
-      _statusController.text = widget.beneficiary!['status'] ?? '';
+      _regionController.text = widget.beneficiary?['region'] ?? '';
+      _nameController.text = widget.beneficiary?['name'] ?? '';
+      _spouseNameController.text = widget.beneficiary?['spouse_name'] ?? '';
+      _statusController.text = widget.beneficiary?['status'] ?? '';
       _familyMembersController.text =
-          widget.beneficiary!['family_members']?.toString() ?? '';
-      _gradeController.text = widget.beneficiary!['grade'] ?? '';
-      _phoneController.text = widget.beneficiary!['phone'] ?? '';
-      _addressController.text = widget.beneficiary!['address'] ?? '';
-      _propertyTypeController.text = widget.beneficiary!['property_type'] ?? '';
-      _notesController.text = widget.beneficiary!['notes'] ?? '';
-      if (widget.beneficiary!['image1Path'] != null) {
+          widget.beneficiary?['family_members']?.toString() ?? '';
+      _gradeController.text = widget.beneficiary?['grade'] ?? '';
+      _phoneController.text = widget.beneficiary?['phone'] ?? '';
+      _addressController.text = widget.beneficiary?['address'] ?? '';
+      _propertyTypeController.text = widget.beneficiary?['property_type'] ?? '';
+      _notesController.text = widget.beneficiary?['notes'] ?? '';
+
+      if (widget.beneficiary?['image1Path'] != null) {
         _image1 = File(widget.beneficiary!['image1Path']);
       }
-      if (widget.beneficiary!['image2Path'] != null) {
+      if (widget.beneficiary?['image2Path'] != null) {
         _image2 = File(widget.beneficiary!['image2Path']);
       }
     }
   }
 
   Future<void> _saveData() async {
-    final dbHelper = DatabaseHelper();
+    final dbHelper =
+        DatabaseHelper(); //  تأكد من تعريف DatabaseHelper في ملف منفصل
     final data = {
       'region': _regionController.text,
       'name': _nameController.text,
@@ -79,23 +80,18 @@ class _BeneficiaryFormState extends State<BeneficiaryForm> {
     };
 
     if (widget.beneficiary == null) {
-      await dbHelper.insertBeneficiary(data);
+      await dbHelper.insertBeneficiary(
+          data); //  تأكد من تعريف هذه الدالة في DatabaseHelper
     } else {
-      await dbHelper.updateBeneficiary(widget.beneficiary!['id'], data);
+      await dbHelper.updateBeneficiary(widget.beneficiary!['id'],
+          data); // تأكد من تعريف هذه الدالة في DatabaseHelper
     }
 
+    // عرض رسالة نجاح
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('تم حفظ البيانات بنجاح'),
-        backgroundColor: primaryColor,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-        ),
-      ),
+      const SnackBar(content: Text('تم حفظ البيانات بنجاح')),
     );
-
-    Navigator.of(context).pop(true);
+    Navigator.of(context).pop(true); //  لإغلاق الصفحة الحالية بعد الحفظ
   }
 
   Widget _buildFormField(
@@ -118,7 +114,7 @@ class _BeneficiaryFormState extends State<BeneficiaryForm> {
                     : TextInputType.text,
         maxLines: isMultiLine ? 3 : 1,
         inputFormatters: isNumber || isPhone
-            ? [FilteringTextInputFormatter.digitsOnly]
+            ? <TextInputFormatter>[FilteringTextInputFormatter.digitsOnly]
             : null,
         decoration: InputDecoration(
           labelText: label,
@@ -146,6 +142,44 @@ class _BeneficiaryFormState extends State<BeneficiaryForm> {
     );
   }
 
+  Widget _buildImagePickerColumn(int imageNumber, File? imageFile) {
+    return Column(
+      children: [
+        GestureDetector(
+          onTap: widget.isReadOnly
+              ? null
+              : () async {
+                  final String? imagePath = await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => const ImagePickerScreen()),
+                  );
+                  setState(() {
+                    if (imageNumber == 1) {
+                      _image1 = imagePath != null ? File(imagePath) : null;
+                    } else {
+                      _image2 = imagePath != null ? File(imagePath) : null;
+                    }
+                  });
+                },
+          child: CircleAvatar(
+            radius: 50,
+            backgroundImage: imageFile != null ? FileImage(imageFile) : null,
+            child: imageFile == null
+                ? Icon(
+                    Icons.add_a_photo,
+                    color: Colors.grey[700],
+                    size: 30,
+                  )
+                : null,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(imageNumber == 1 ? 'الصورة الأولى' : 'الصورة الثانية'),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Directionality(
@@ -167,7 +201,7 @@ class _BeneficiaryFormState extends State<BeneficiaryForm> {
               key: _formKey,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
+                children: <Widget>[
                   Card(
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
@@ -177,11 +211,13 @@ class _BeneficiaryFormState extends State<BeneficiaryForm> {
                       padding: const EdgeInsets.all(16),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
+                        children: <Widget>[
                           const Text(
                             'المعلومات الأساسية',
                             style: TextStyle(
-                                fontSize: 18, fontWeight: FontWeight.bold),
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                           const SizedBox(height: 16),
                           _buildFormField('المنطقة', _regionController),
@@ -208,7 +244,7 @@ class _BeneficiaryFormState extends State<BeneficiaryForm> {
                       padding: const EdgeInsets.all(16),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
+                        children: <Widget>[
                           const Text(
                             'معلومات السكن',
                             style: TextStyle(
@@ -233,7 +269,7 @@ class _BeneficiaryFormState extends State<BeneficiaryForm> {
                       padding: const EdgeInsets.all(16),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
+                        children: <Widget>[
                           const Text(
                             'الصور',
                             style: TextStyle(
@@ -242,7 +278,7 @@ class _BeneficiaryFormState extends State<BeneficiaryForm> {
                           const SizedBox(height: 16),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceAround,
-                            children: [
+                            children: <Widget>[
                               _buildImagePickerColumn(1, _image1),
                               _buildImagePickerColumn(2, _image2),
                             ],
@@ -272,43 +308,6 @@ class _BeneficiaryFormState extends State<BeneficiaryForm> {
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildImagePickerColumn(int imageNumber, File? imageFile) {
-    return Column(
-      children: [
-        GestureDetector(
-          onTap: widget.isReadOnly
-              ? null
-              : () async {
-                  final pickedFile =
-                      await picker.pickImage(source: ImageSource.gallery);
-                  setState(() {
-                    if (imageNumber == 1) {
-                      _image1 =
-                          pickedFile != null ? File(pickedFile.path) : null;
-                    } else {
-                      _image2 =
-                          pickedFile != null ? File(pickedFile.path) : null;
-                    }
-                  });
-                },
-          child: CircleAvatar(
-            radius: 50,
-            backgroundImage: imageFile != null ? FileImage(imageFile) : null,
-            child: imageFile == null
-                ? Icon(
-                    Icons.add_a_photo,
-                    color: Colors.grey[700],
-                    size: 30,
-                  )
-                : null,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(imageNumber == 1 ? 'الصورة الأولى' : 'الصورة الثانية'),
-      ],
     );
   }
 }
