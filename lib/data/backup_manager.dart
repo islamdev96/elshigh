@@ -18,6 +18,7 @@ class BackupManager {
     return appDir;
   }
 
+/////////////////////////////
   Future<String> _encodeImageToBase64(String imagePath) async {
     if (imagePath.isEmpty) return '';
     final File imageFile = File(imagePath);
