@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
-import 'database_helper.dart';
+import 'data/database_helper.dart';
 import 'dart:io';
 
 class BeneficiaryForm extends StatefulWidget {

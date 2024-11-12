@@ -4,7 +4,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:file_picker/file_picker.dart';
 import 'dart:io';
-import 'backup_manager.dart';
+import '../data/backup_manager.dart';
 
 class SettingsPage extends StatefulWidget {
   final BackupManager backupManager;

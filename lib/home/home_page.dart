@@ -1,9 +1,9 @@
-import 'package:elshigh/backup_manager.dart';
+import 'package:elshigh/data/backup_manager.dart';
 import 'package:flutter/material.dart';
-import 'beneficiary_form.dart';
-import 'database_helper.dart';
-import 'home/beneficiary_tile.dart';
-import 'settings_page.dart';
+import '../beneficiary_form.dart';
+import '../data/database_helper.dart';
+import 'beneficiary_tile.dart';
+import '../settings/settings_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -144,6 +144,8 @@ class _HomePageState extends State<HomePage> {
                 decoration: InputDecoration(
                   hintText:
                       'ابحث عن طريق الاسم، اسم الزوج، رقم الهاتف، أو المنطقة',
+                  hintStyle: const TextStyle(
+                      fontSize: 12), // Adjust the font size here
                   prefixIcon: const Icon(Icons.search),
                   contentPadding:
                       const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
