@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path;
+import 'package:archive/archive.dart';
+import 'package:share_plus/share_plus.dart';
 import 'database_helper.dart';
 
 class BackupManager {
@@ -18,7 +20,6 @@ class BackupManager {
     return appDir;
   }
 
-/////////////////////////////
   Future<String> _encodeImageToBase64(String imagePath) async {
     if (imagePath.isEmpty) return '';
     final File imageFile = File(imagePath);
@@ -67,10 +68,36 @@ class BackupManager {
       }
 
       final jsonData = json.encode(modifiedData);
-      final file = File('${backupDir.path}/data.json');
-      await file.writeAsString(jsonData);
+
+      // Compress the JSON data
+      final List<int> jsonBytes = utf8.encode(jsonData);
+      final List<int> compressedData = GZipEncoder().encode(jsonBytes)!;
+
+      // Save compressed data
+      final compressedFile = File('${backupDir.path}/data.gz');
+      await compressedFile.writeAsBytes(compressedData);
+
+      // Share the backup file
+      await shareBackup(compressedFile.path);
     } catch (e) {
       throw Exception('فشل في إنشاء النسخة الاحتياطية: $e');
+    }
+  }
+
+  Future<void> shareBackup(String backupPath) async {
+    try {
+      final file = File(backupPath);
+      if (await file.exists()) {
+        await Share.shareXFiles([XFile(backupPath)],
+            text: 'نسخة احتياطية من التطبيق'); // Create an XFile
+      } else {
+        // Handle the case where the file doesn't exist.  Perhaps show an error message to the user.
+        print('Backup file not found at: $backupPath');
+        // Or throw an exception if that's your error handling strategy:
+        // throw Exception('Backup file not found');
+      }
+    } catch (e) {
+      throw Exception('فشل في مشاركة النسخة الاحتياطية: $e');
     }
   }
 
@@ -78,10 +105,15 @@ class BackupManager {
     try {
       final directory = await getApplicationDocumentsDirectory();
       final backupDir = Directory('${directory.path}/backups/$backupName');
-      final file = File('${backupDir.path}/data.json');
+      final compressedFile = File('${backupDir.path}/data.gz');
 
-      if (await file.exists()) {
-        final jsonData = await file.readAsString();
+      if (await compressedFile.exists()) {
+        // Read and decompress the data
+        final List<int> compressedData = await compressedFile.readAsBytes();
+        final List<int> decompressedBytes =
+            GZipDecoder().decodeBytes(compressedData);
+        final jsonData = utf8.decode(decompressedBytes);
+
         final data = json.decode(jsonData) as List;
         await dbHelper.clearAllBeneficiaries();
 
@@ -115,9 +147,13 @@ class BackupManager {
     try {
       final file = File(filePath);
       if (await file.exists()) {
-        final jsonData = await file.readAsString();
-        final data = json.decode(jsonData) as List;
+        // Read and decompress the data
+        final List<int> compressedData = await file.readAsBytes();
+        final List<int> decompressedBytes =
+            GZipDecoder().decodeBytes(compressedData);
+        final jsonData = utf8.decode(decompressedBytes);
 
+        final data = json.decode(jsonData) as List;
         await dbHelper.clearAllBeneficiaries();
 
         for (var item in data) {
