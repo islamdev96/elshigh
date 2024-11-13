@@ -1,5 +1,7 @@
-import 'package:elshigh/data/backup_manager.dart';
+// الاستيرادات
+import 'package:elshigh/data/pdf.dart'; // تأكد من استيراد exportAndSharePdf
 import 'package:flutter/material.dart';
+import 'package:elshigh/data/backup_manager.dart';
 import '../Add_a_new_user/beneficiary_form.dart';
 import '../data/database_helper.dart';
 import 'beneficiary_tile.dart';
@@ -34,21 +36,18 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
-  /// دالة لتصفية المستفيدين بناءً على البحث بالاسم، اسم الزوج/ة، رقم الهاتف أو المنطقة.
   void _filterBeneficiaries(String query) {
     setState(() {
       filteredBeneficiaries = allBeneficiaries.where((beneficiary) {
         final name = beneficiary['name'].toLowerCase();
         final spouseName = (beneficiary['spouse_name'] ?? '').toLowerCase();
         final phone = beneficiary['phone'].toLowerCase();
-        final region = (beneficiary['region'] ?? '').toLowerCase(); // المنطقة
+        final region = (beneficiary['region'] ?? '').toLowerCase();
         final searchLower = query.toLowerCase();
-
-        // التحقق من أن البحث يحتوي على الاسم أو اسم الزوج/ة أو رقم الهاتف أو المنطقة.
         return name.contains(searchLower) ||
             spouseName.contains(searchLower) ||
             phone.contains(searchLower) ||
-            region.contains(searchLower); // إضافة المنطقة إلى البحث
+            region.contains(searchLower);
       }).toList();
     });
   }
@@ -76,6 +75,10 @@ class _HomePageState extends State<HomePage> {
       await dbHelper.deleteBeneficiary(id);
       _loadBeneficiaries();
     }
+  }
+
+  void _sharePdf(BuildContext context) {
+    exportAndSharePdf(context); // استدعاء الدالة لتصدير ومشاركة PDF
   }
 
   @override
@@ -132,6 +135,11 @@ class _HomePageState extends State<HomePage> {
                   );
                 },
               ),
+              _buildDrawerItem(
+                icon: Icons.share,
+                text: 'مشاركة PDF',
+                onTap: () => _sharePdf(context),
+              ),
             ],
           ),
         ),
@@ -144,8 +152,7 @@ class _HomePageState extends State<HomePage> {
                 decoration: InputDecoration(
                   hintText:
                       'ابحث عن طريق الاسم، اسم الزوج، رقم الهاتف، أو المنطقة',
-                  hintStyle: const TextStyle(
-                      fontSize: 12), // Adjust the font size here
+                  hintStyle: const TextStyle(fontSize: 12),
                   prefixIcon: const Icon(Icons.search),
                   contentPadding:
                       const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
@@ -204,10 +211,11 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildDrawerItem(
-      {required IconData icon,
-      required String text,
-      required VoidCallback onTap}) {
+  Widget _buildDrawerItem({
+    required IconData icon,
+    required String text,
+    required VoidCallback onTap,
+  }) {
     return ListTile(
       leading: Icon(icon, color: Colors.teal.shade700),
       title: Text(text,
