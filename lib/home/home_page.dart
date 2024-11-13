@@ -131,11 +131,6 @@ class _HomePageState extends State<HomePage> {
                   );
                 },
               ),
-              _buildDrawerItem(
-                icon: Icons.share,
-                text: 'مشاركة PDF',
-                onTap: () => PdfExportService.exportAndSharePdf(context),
-              ),
             ],
           ),
         ),

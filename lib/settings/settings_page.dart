@@ -1,3 +1,4 @@
+import 'package:elshigh/data/pdf.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
@@ -77,10 +78,34 @@ class _SettingsPageState extends State<SettingsPage> {
                   label: 'مشاركة النسخة الاحتياطية',
                   onPressed: _shareBackup,
                 ),
+                const SizedBox(height: 16),
+                _buildSettingCard(
+                  icon: Icons.picture_as_pdf,
+                  label: 'مشاركة PDF',
+                  onPressed: () => PdfExportService.exportAndSharePdf(context),
+                ),
               ],
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildDrawerItem({
+    required IconData icon,
+    required String text,
+    required VoidCallback onTap,
+  }) {
+    return ListTile(
+      leading: Icon(icon, color: Colors.teal.shade700),
+      title: Text(text,
+          style: TextStyle(fontSize: 18, color: Colors.teal.shade800)),
+      onTap: onTap,
+      contentPadding:
+          const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(10),
       ),
     );
   }
