@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:intl/date_symbol_data_local.dart'; // تغيير الاستيراد
 import 'home/home_page.dart';
 
 Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized(); // تأكد من تهيئة ال Widgets
+  WidgetsFlutterBinding.ensureInitialized();
+  await initializeDateFormatting('ar', null); // إضافة المعامل الثاني
+
   runApp(const MyApp());
 }
 
@@ -11,9 +15,18 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
-      home: HomePage(),
+    return MaterialApp(
+      home: const HomePage(),
       debugShowCheckedModeBanner: false,
+      locale: const Locale('ar', ''), // تعيين اللغة العربية
+      supportedLocales: const [
+        Locale('ar', ''),
+      ],
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
     );
   }
 }

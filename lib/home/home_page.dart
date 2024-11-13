@@ -77,10 +77,6 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  void _sharePdf(BuildContext context) {
-    exportAndSharePdf(context); // استدعاء الدالة لتصدير ومشاركة PDF
-  }
-
   @override
   Widget build(BuildContext context) {
     return Directionality(
@@ -138,7 +134,7 @@ class _HomePageState extends State<HomePage> {
               _buildDrawerItem(
                 icon: Icons.share,
                 text: 'مشاركة PDF',
-                onTap: () => _sharePdf(context),
+                onTap: () => PdfExportService.exportAndSharePdf(context),
               ),
             ],
           ),
